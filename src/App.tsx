@@ -6,8 +6,9 @@ const AD = "FLAT NO.201, KARRE COTTAGE, VI PHASE, KPHB COLONY, HYDERABAD-500072.
 const MS = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
 const DY = {Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31,Jan:31,Feb:28,Mar:31};
 
-const fyL = y => `${parseInt(y||0)}-${String(parseInt(y||0)+1).slice(2)}`;
-const mL  = (m, y) => `${m}-${String(["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1).slice(2)}`;
+const fyL = y => `${parseInt(y||0)}-${String(parseInt(y||0)+1).slice(-2)}`;
+// Upgraded mL function: formats "Apr" into "Apr-25" or "Jan-26" based on the FY
+const mL  = (m, y) => `${m}-${String(["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1).slice(-2)}`;
 const f$  = n => Math.round(n||0).toLocaleString("en-IN");
 const gr  = r => (r.basic||0) + (r.hra||0) + (r.conv||0) + (r.med||0) + (r.inc||0) + (r.oth||0);
 const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0);
@@ -359,7 +360,7 @@ export default function App() {
         nextPay[eid] = {...nextPay[eid], [fy]: [...existing, {m:mo, t:"s", basic:+d.basic, hra:+d.hra, conv:+d.conv, med:+d.med, inc:+d.inc, oth:0, lop:+d.lop, adv:0, pt:+d.pt, tds:+d.tds, note:d.note||""}]};
       }
     });
-    setPay(nextPay); setShowBulk(false); alert(`Bulk Payroll processed for ${mo} ${fyL(fy)}`);
+    setPay(nextPay); setShowBulk(false); alert(`Bulk Payroll processed for ${mL(mo, fy)}`);
   };
 
   const saveOffCycle = () => {
@@ -371,9 +372,9 @@ export default function App() {
   };
 
   const handleExportLedger = () => {
-    const head = ["Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Others", "Gross Amount", "LOP", "Prof Tax", "TDS", "Other Ded", "Taxable Income", "Net Amount"];
+    const head = ["Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Others", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Total Deductions", "Taxable Income", "Net Amount"];
     const rows = [head]; const tEmps = ses?.role==="a" ? (lEmp ? emps.filter(e=>e.id===lEmp) : emps) : [myE];
-    tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([e.name, r.m, r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.pt||0, r.tds||0, r.adv||0, txInc(r), np(r)])); });
+    tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([e.name, mL(r.m, fy), r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.adv||0, r.pt||0, r.tds||0, dd(r), txInc(r), np(r)])); });
     exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
   };
 
@@ -414,14 +415,14 @@ export default function App() {
       {tab==="dashboard" && (
         <div>
           <div style={{display:"flex",gap:10,marginBottom:20,alignItems:"center"}}>
-            <select value={mo} onChange={e=>setMo(e.target.value)} style={{...sInp, width:150}}>{MS.map(m=><option key={m}>{m}</option>)}</select>
+            <select value={mo} onChange={e=>setMo(e.target.value)} style={{...sInp, width:150}}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select>
             {ses.role==="a" && <div style={{marginLeft:"auto",display:"flex",gap:10}}>
               <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={openBulkPayroll}>+ Run Bulk Payroll</button>
               <button style={{...btn,background:"#185FA5",color:"#fff"}} onClick={()=>{setShowOffCycle(true); setShowBulk(false);}}>+ Off-Cycle Payroll</button>
               <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
                 const rows = [["Employee","Role","Basic","Inc","Gross","PT","TDS","Taxable Income","Net"]];
                 emps.forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([e.name,e.desig,r.basic,r.inc,gr(r),r.pt,r.tds,txInc(r),np(r)])));
-                exportCSV(rows, `Payroll_${mo}_${fyL(fy)}.csv`);
+                exportCSV(rows, `Payroll_${mL(mo, fy)}.csv`);
               }}>Export CSV</button>
             </div>}
           </div>
@@ -435,7 +436,7 @@ export default function App() {
 
           {showBulk && ses.role==="a" && (
             <div style={{...card, border:"1px solid #1a1a2e", marginBottom:20}}>
-              <h3>Bulk Payroll for {mo} {fyL(fy)}</h3>
+              <h3>Bulk Payroll for {mL(mo, fy)}</h3>
               <div style={{overflowX:"auto"}}>
                 <table style={{width:"100%",fontSize:12,borderCollapse:"collapse"}}>
                   <thead><tr style={{textAlign:"left"}}><th>Employee</th><th>Basic</th><th>HRA</th><th>Inc</th><th>LOP</th><th>PT</th><th>Net</th></tr></thead>
@@ -451,7 +452,7 @@ export default function App() {
 
           {showOffCycle && ses.role==="a" && (
             <div style={{...card, border:"1px solid #185FA5", marginBottom:20}}>
-              <h3>Run Off-Cycle Payroll for {mo} {fyL(fy)}</h3>
+              <h3>Run Off-Cycle Payroll for {mL(mo, fy)}</h3>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:15}}>
                 <div><label style={lbl}>Employee</label><select style={sInp} value={offCycleData.empId} onChange={e=>{const emp=emps.find(x=>x.id===e.target.value);setOffCycleData({...offCycleData, empId:e.target.value, basic:emp?.basic||0, hra:Math.round((emp?.basic||0)*0.4)});}}><option value="">Select...</option>{emps.filter(e=>e.status==="Active").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
                 {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Others","oth"],["LOP","lop"],["PT","pt"],["TDS","tds"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={offCycleData[k]} onChange={e=>setOffCycleData({...offCycleData,[k]:e.target.value})}/></div>))}
@@ -475,10 +476,15 @@ export default function App() {
         </div>
       )}
 
-      {/* --- RESTORED ADMIN EMPLOYEES TAB --- */}
+      {/* --- EMPLOYEES TAB --- */}
       {tab==="employees" && ses.role==="a" && (
         <div>
-          <div style={{marginBottom:15,display:"flex",justifyContent:"flex-end"}}>
+          <div style={{marginBottom:15,display:"flex",justifyContent:"flex-end",gap:10}}>
+            <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
+              const rows = [["ID","Name","Designation","Email","Phone","PAN","Category","Basic Salary","Bank Details","Start Date","End Date","Status","Comments"]];
+              emps.forEach(e => rows.push([e.id,e.name,e.desig,e.email,e.phone,e.pan,e.cat,e.basic,e.bank,e.start,e.end,e.status,e.comments||""]));
+              exportCSV(rows, `Employees_${fyL(fy)}.csv`);
+            }}>Download Excel</button>
             <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>setShowAddEmp(!showAddEmp)}>+ Add Employee</button>
           </div>
 
@@ -523,17 +529,17 @@ export default function App() {
 
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f4f4f4",textAlign:"left"}}><th style={thS}>ID</th><th style={thS}>Name</th><th style={thS}>Email</th><th style={thS}>PAN</th><th style={thS}>Basic</th><th style={thS}>Drive Folder</th><th style={thS}>Status</th><th style={thS}>Action</th></tr></thead>
-              <tbody>{emps.map(e=>(<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{e.id}</td><td style={tdS}><b>{e.name}</b></td><td style={tdS}>{e.email}</td><td style={tdS}>{e.pan}</td><td style={tdS}>{f$(e.basic)}</td><td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer">Link</a> : "-"}</td><td style={tdS}>{e.status}</td><td style={tdS}><div style={{display:"flex",gap:5}}><button style={{...btn,padding:"4px 8px"}} onClick={()=>{setEditEmp(e.id);setEditData({...e});}}>Edit</button> <button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setEmps(p=>p.filter(x=>x.id!==e.id))}>Del</button></div></td></tr>))}</tbody>
+              <thead><tr style={{background:"#f4f4f4",textAlign:"left"}}><th style={thS}>ID</th><th style={thS}>Name</th><th style={thS}>Basic</th><th style={thS}>Drive Folder</th><th style={thS}>Status</th><th style={thS}>Comments</th><th style={thS}>Action</th></tr></thead>
+              <tbody>{emps.map(e=>(<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{e.id}</td><td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td><td style={tdS}>{f$(e.basic)}</td><td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer">Link</a> : "-"}</td><td style={tdS}>{e.status}</td><td style={tdS}>{e.comments||"-"}</td><td style={tdS}><div style={{display:"flex",gap:5}}><button style={{...btn,padding:"4px 8px"}} onClick={()=>{setEditEmp(e.id);setEditData({...e});}}>Edit</button> <button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setEmps(p=>p.filter(x=>x.id!==e.id))}>Del</button></div></td></tr>))}</tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* --- RESTORED ATTENDANCE TAB HISTORY --- */}
+      {/* --- ATTENDANCE TAB --- */}
       {tab==="attendance" && (
         <div>
-          <div style={{display:"flex",gap:10,marginBottom:20}}><select value={mo} onChange={e=>setMo(e.target.value)} style={sInp}>{MS.map(m=><option key={m}>{m}</option>)}</select></div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}><select value={mo} onChange={e=>setMo(e.target.value)} style={sInp}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
               <thead><tr style={{background:"#f4f4f4",textAlign:"left"}}><th style={thS}>Name</th><th>Present</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
@@ -550,13 +556,13 @@ export default function App() {
                 <h3 style={{margin:0}}>Leave Register ({fyL(fy)})</h3>
                 <button style={{...btn,background:"#1D9E75",color:"#fff",border:"none"}} onClick={()=>{
                   const rows = [["Employee","Month","Present","Leave","Balance","LOP","Comments"]];
-                  emps.forEach(e=>MS.forEach(m=>{const a=att[e.id]?.[m]; if(a) rows.push([e.name,m,a.present||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);}));
+                  emps.forEach(e=>MS.forEach(m=>{const a=att[e.id]?.[m]; if(a) rows.push([e.name,mL(m, fy),a.present||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);}));
                   exportCSV(rows, `Leave_Register_${fyL(fy)}.csv`);
                 }}>Download Excel</button>
               </div>
               <div style={{...card, padding:0, overflowX:"auto"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-                  <thead><tr style={{background:"#1a1a2e",color:"#fff",textAlign:"left"}}><th style={thS}>Employee</th>{MS.map(m=><th key={m} style={thS}>{m}</th>)}</tr></thead>
+                  <thead><tr style={{background:"#1a1a2e",color:"#fff",textAlign:"left"}}><th style={thS}>Employee</th>{MS.map(m=><th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
                   <tbody>
                     {emps.map(e=>(
                       <tr key={e.id} style={{borderBottom:"1px solid #eee"}}>
@@ -572,15 +578,16 @@ export default function App() {
         </div>
       )}
 
+      {/* --- LEDGER TAB --- */}
       {tab==="ledger" && (
         <div>
-          <div style={{display:"flex",gap:10,marginBottom:20}}><select style={sInp} value={mo} onChange={e=>setMo(e.target.value)}><option value="">All Months</option>{MS.map(m=><option key={m}>{m}</option>)}</select>{ses.role==="a" && <select style={sInp} value={lEmp} onChange={e=>setLEmp(e.target.value)}><option value="">All Employees</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>}<div style={{marginLeft:"auto", display:"flex", gap:10}}>{ses.role==="a" && <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>setShowAddEntry(!showAddEntry)}>+ Add Entry</button>}<button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={handleExportLedger}>Download Excel</button></div></div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}><select style={sInp} value={mo} onChange={e=>setMo(e.target.value)}><option value="">All Months</option>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select>{ses.role==="a" && <select style={sInp} value={lEmp} onChange={e=>setLEmp(e.target.value)}><option value="">All Employees</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>}<div style={{marginLeft:"auto", display:"flex", gap:10}}>{ses.role==="a" && <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>setShowAddEntry(!showAddEntry)}>+ Add Entry</button>}<button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={handleExportLedger}>Download Excel</button></div></div>
           {showAddEntry && ses.role==="a" && (
             <div style={{...card, border:"1px solid #1a1a2e", marginBottom:20}}>
               <h4 style={{marginTop:0}}>Add Manual Ledger Entry</h4>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:15}}>
                 <div><label style={lbl}>Employee</label><select style={sInp} value={pEmp} onChange={e=>setPEmp(e.target.value)}><option value="">Select...</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
-                <div><label style={lbl}>Month</label><select style={sInp} value={nEn.m} onChange={e=>setNEn({...nEn,m:e.target.value})}>{MS.map(m=><option key={m}>{m}</option>)}</select></div>
+                <div><label style={lbl}>Month</label><select style={sInp} value={nEn.m} onChange={e=>setNEn({...nEn,m:e.target.value})}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
                 <div><label style={lbl}>Type</label><select style={sInp} value={nEn.t} onChange={e=>setNEn({...nEn,t:e.target.value})}><option value="s">Salary</option><option value="i">Incentive</option></select></div>
                 {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Others","oth"],["LOP","lop"],["Adv","adv"],["PT","pt"],["TDS","tds"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={e=>setNEn({...nEn,[k]:e.target.value})}/></div>))}
               </div>
@@ -589,22 +596,23 @@ export default function App() {
           )}
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-              <thead style={{background:"#1a1a2e",color:"#fff"}}><tr style={{textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Month</th><th>Basic</th><th>Inc</th><th>Gross</th><th>Taxable</th><th>Net</th>{ses.role==="a" && <th style={thS}>Action</th>}</tr></thead>
+              <thead style={{background:"#1a1a2e",color:"#fff"}}><tr style={{textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Month</th><th>Basic</th><th>Inc</th><th>Gross</th><th>LOP</th><th>Adv</th><th>PT</th><th>TDS</th><th>Tot. Ded</th><th>Net</th>{ses.role==="a" && <th style={thS}>Action</th>}</tr></thead>
               <tbody>{emps.filter(e => ses.role==="a" ? (!lEmp||e.id===lEmp) : e.id===ses.id).flatMap(e=>(pay[e.id]?.[fy]||[]).filter(r=>!mo||r.m===mo).map((r,i)=>(
-                <tr key={e.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{e.name}</td><td style={tdS}>{r.m}</td><td>{f$(r.basic)}</td><td>{f$(r.inc)}</td><td>{f$(gr(r))}</td><td style={{fontWeight:"bold"}}>{f$(txInc(r))}</td><td style={{color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td>{ses.role==="a" && <td style={tdS}><button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setPay({...pay,[e.id]:{...pay[e.id],[fy]:pay[e.id][fy].filter((_,idx)=>idx!==i)}})}>Del</button></td>}</tr>
+                <tr key={e.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}><b>{e.name}</b></td><td style={tdS}>{mL(r.m, fy)}</td><td>{f$(r.basic)}</td><td>{f$(r.inc)}</td><td style={{fontWeight:"bold"}}>{f$(gr(r))}</td><td>{f$(r.lop)}</td><td>{f$(r.adv)}</td><td>{f$(r.pt)}</td><td>{f$(r.tds)}</td><td style={{color:"#D85A30"}}>{f$(dd(r))}</td><td style={{color:"#1D9E75",fontWeight:"bold",fontSize:12}}>{f$(np(r))}</td>{ses.role==="a" && <td style={tdS}><button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setPay({...pay,[e.id]:{...pay[e.id],[fy]:pay[e.id][fy].filter((_,idx)=>idx!==i)}})}>Del</button></td>}</tr>
               )))}</tbody>
             </table>
           </div>
         </div>
       )}
 
+      {/* --- PAYSLIPS TAB --- */}
       {tab==="payslips" && (
         <div style={card}>
           <h3 style={{marginTop:0,marginBottom:20}}>Payslip Generator</h3>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:15,marginBottom:20}}>
             {ses.role==="a" && <div><label style={lbl}>Select Staff</label><select style={sInp} value={pEmp} onChange={e=>setPEmp(e.target.value)}><option value="">Select...</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>}
             <div><label style={lbl}>Start Year</label><input type="number" style={sInp} value={pFy} onChange={e=>setPFy(e.target.value)} /></div>
-            <div><label style={lbl}>Month</label><select style={sInp} value={pMo} onChange={e=>setPMo(e.target.value)}>{MS.map(m=><option key={m}>{m}</option>)}</select></div>
+            <div><label style={lbl}>Month</label><select style={sInp} value={pMo} onChange={e=>setPMo(e.target.value)}>{MS.map(m=><option key={m} value={m}>{mL(m, pFy)}</option>)}</select></div>
           </div>
           <button style={{padding:"12px 24px",background:"#1a1a2e",color:"#fff",border:"none",borderRadius:6,width:"100%",fontSize:14,fontWeight:"bold"}} onClick={()=>{
             const t = ses.role==="a"?pEmp:ses.id; const ents = (pay[t]?.[pFy] || []).filter(x=>x.m===pMo);
