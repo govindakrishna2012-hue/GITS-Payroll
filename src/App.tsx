@@ -10,7 +10,7 @@ const fyL = y => `${parseInt(y||0)}-${String(parseInt(y||0)+1).slice(-2)}`;
 const mL  = (m, y) => `${m}-${String(["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1).slice(-2)}`;
 const f$  = n => Math.round(n||0).toLocaleString("en-IN");
 const gr  = r => (r.basic||0) + (r.hra||0) + (r.conv||0) + (r.med||0) + (r.inc||0) + (r.oth||0);
-const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0);
+const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0) + (r.othD||0);
 const np  = r => gr(r) - dd(r);
 const txInc = r => np(r) + (r.pt||0) + (r.tds||0);
 
@@ -28,112 +28,112 @@ const E0 = [
 // --- COMPLETE HISTORICAL PAYROLL DATA ---
 const P0 = {
   SRR1001:{2025:[
-    {m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"May",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:151972,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1 2025"},
-    {m:"Jun",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Jul",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Aug",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:142448,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2 2025"},
-    {m:"Sep",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Oct",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Nov",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:176303,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3 2025"},
-    {m:"Dec",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Jan",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},
-    {m:"Feb",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:5133,lop:0,adv:0,pt:200,tds:0,note:"Leave encashment Rs.5,133"}
+    {m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"May",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:151972,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q1 2025"},
+    {m:"Jun",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Jul",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Aug",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:142448,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q2 2025"},
+    {m:"Sep",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Oct",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Nov",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:176303,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q3 2025"},
+    {m:"Dec",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Jan",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"},
+    {m:"Feb",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:5133,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Leave encashment Rs.5,133"}
   ]},
   SRR1003:{2025:[
-    {m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:97120,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},
-    {m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"May",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Jun",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:106320,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},
-    {m:"Jul",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Aug",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Sep",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:111600,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},
-    {m:"Oct",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Nov",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Dec",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:95520,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},
-    {m:"Jan",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},
-    {m:"Feb",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"}
+    {m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:97120,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q1"},
+    {m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"May",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Jun",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:106320,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q2"},
+    {m:"Jul",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Aug",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Sep",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:111600,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q3"},
+    {m:"Oct",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Nov",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Dec",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:95520,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q4"},
+    {m:"Jan",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"},
+    {m:"Feb",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"}
   ]},
   ADMN1002:{2025:[
-    {m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:79891,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},
-    {m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"May",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Jun",t:"s",basic:21740,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1100,adv:0,pt:200,tds:0,note:"LOP Rs.1100"},
-    {m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:81791,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},
-    {m:"Jul",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Aug",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Sep",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:87588,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},
-    {m:"Oct",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Nov",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Dec",t:"s",basic:21775,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1065,adv:0,pt:200,tds:0,note:"LOP Rs.1065"},
-    {m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:79466,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},
-    {m:"Jan",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},
-    {m:"Feb",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"}
+    {m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:79891,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q1"},
+    {m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"May",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Jun",t:"s",basic:21740,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1100,adv:0,pt:200,tds:0,othD:0,note:"LOP Rs.1100"},
+    {m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:81791,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q2"},
+    {m:"Jul",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Aug",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Sep",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:87588,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q3"},
+    {m:"Oct",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Nov",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Dec",t:"s",basic:21775,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1065,adv:0,pt:200,tds:0,othD:0,note:"LOP Rs.1065"},
+    {m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:79466,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q4"},
+    {m:"Jan",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"},
+    {m:"Feb",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"}
   ]},
   D1001:{2025:[
-    {m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},
-    {m:"May",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},
-    {m:"Jun",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},
-    {m:"Jul",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 5972"},
-    {m:"Aug",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 4972"},
-    {m:"Sep",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 3972"},
-    {m:"Oct",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 2972"},
-    {m:"Nov",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 1972"},
-    {m:"Dec",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 972"},
-    {m:"Jan",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:972,pt:200,tds:0,note:"Hlth Ins Bal 0"},
-    {m:"Feb",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""}
+    {m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""},
+    {m:"May",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""},
+    {m:"Jun",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""},
+    {m:"Jul",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 5972"},
+    {m:"Aug",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 4972"},
+    {m:"Sep",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 3972"},
+    {m:"Oct",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 2972"},
+    {m:"Nov",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 1972"},
+    {m:"Dec",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 972"},
+    {m:"Jan",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:972,pt:200,tds:0,othD:0,note:"Hlth Ins Bal 0"},
+    {m:"Feb",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""}
   ]},
   ADMN1004:{2025:[
-    {m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:39946,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},
-    {m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"May",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"Jun",t:"s",basic:14783,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:1667,adv:0,pt:200,tds:0,note:"2 days LOP Rs.1667"},
-    {m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:40896,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},
-    {m:"Jul",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"Aug",t:"s",basic:15644,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:806,adv:0,pt:200,tds:0,note:"1 day LOP Rs.806"},
-    {m:"Sep",t:"s",basic:15617,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:833,adv:0,pt:200,tds:0,note:"1 day LOP Rs.833"},
-    {m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:43794,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},
-    {m:"Oct",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"Nov",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"Dec",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:39733,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},
-    {m:"Jan",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},
-    {m:"Feb",t:"s",basic:15557,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:893,adv:0,pt:200,tds:0,note:"1 day LOP Rs.893"}
+    {m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:39946,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q1"},
+    {m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"May",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"Jun",t:"s",basic:14783,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:1667,adv:0,pt:200,tds:0,othD:0,note:"2 days LOP Rs.1667"},
+    {m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:40896,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q2"},
+    {m:"Jul",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"Aug",t:"s",basic:15644,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:806,adv:0,pt:200,tds:0,othD:0,note:"1 day LOP Rs.806"},
+    {m:"Sep",t:"s",basic:15617,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:833,adv:0,pt:200,tds:0,othD:0,note:"1 day LOP Rs.833"},
+    {m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:43794,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q3"},
+    {m:"Oct",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"Nov",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"Dec",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:39733,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q4"},
+    {m:"Jan",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"},
+    {m:"Feb",t:"s",basic:15557,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:893,adv:0,pt:200,tds:0,othD:0,note:"1 day LOP Rs.893"}
   ]},
   RR1026:{2025:[
-    {m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"May",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:32057,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},
-    {m:"Jun",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Jul",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Aug",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:35303,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},
-    {m:"Sep",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Oct",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Nov",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:45433,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},
-    {m:"Dec",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Jan",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},
-    {m:"Feb",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"}
+    {m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"May",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:32057,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q1"},
+    {m:"Jun",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Jul",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Aug",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:35303,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q2"},
+    {m:"Sep",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Oct",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Nov",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:45433,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:"Incentive Q3"},
+    {m:"Dec",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Jan",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"},
+    {m:"Feb",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"}
   ]},
   BA1001:{2025:[
-    {m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,note:"Salary Rs.1,79,750/-"},
-    {m:"Jun",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,note:"Salary Rs.1,79,750/-"},
-    {m:"Jul",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:240000,oth:0,lop:0,adv:0,pt:200,tds:56300,note:"Incentive 240hrs"},
-    {m:"Aug",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 128hrs"},
-    {m:"Sep",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 128hrs"},
-    {m:"Oct",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 120hrs"},
-    {m:"Nov",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 120hrs"},
-    {m:"Dec",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:40000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 40hrs"},
-    {m:"Jan",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:61000,note:"Incentive 120hrs"},
-    {m:"Feb",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:75000,note:"Incentive 120hrs"}
+    {m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,othD:0,note:"Salary Rs.1,79,750/-"},
+    {m:"Jun",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,othD:0,note:"Salary Rs.1,79,750/-"},
+    {m:"Jul",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:240000,oth:0,lop:0,adv:0,pt:200,tds:56300,othD:0,note:"Incentive 240hrs"},
+    {m:"Aug",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,othD:0,note:"Incentive 128hrs"},
+    {m:"Sep",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,othD:0,note:"Incentive 128hrs"},
+    {m:"Oct",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,othD:0,note:"Incentive 120hrs"},
+    {m:"Nov",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,othD:0,note:"Incentive 120hrs"},
+    {m:"Dec",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:40000,oth:0,lop:0,adv:0,pt:200,tds:52650,othD:0,note:"Incentive 40hrs"},
+    {m:"Jan",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:61000,othD:0,note:"Incentive 120hrs"},
+    {m:"Feb",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:75000,othD:0,note:"Incentive 120hrs"}
   ]}
 };
 
@@ -152,7 +152,7 @@ const exportCSV = (rows, fn) => {
 
 // --- PDF PAYSLIP GENERATOR ---
 const buildSlip = (emp, mo, fyStr, entries, att) => {
-  const sal = entries.find(r => r.t === "s") || {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,note:""};
+  const sal = entries.find(r => r.t === "s") || {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""};
   const incs = entries.filter(r => r.t === "i").reduce((s,r)=>s+(r.inc||0), 0);
   
   const a = att || {};
@@ -254,7 +254,7 @@ const buildSlip = (emp, mo, fyStr, entries, att) => {
         </tr>
         <tr>
           <td class="fw">INCENTIVES</td><td class="tr">${f$(incs)}</td><td class="tr">${f$(incs)}</td>
-          <td>ADJUSTMENT DED</td><td class="tr">0</td>
+          <td>OTHER DEDUCTIONS</td><td class="tr">${f$(sal.othD)}</td>
         </tr>
         <tr>
           <td class="fw">ARREARS AND OTHERS</td><td class="tr">${f$(sal.oth)}</td><td class="tr">${f$(sal.oth)}</td>
@@ -311,11 +311,11 @@ export default function App() {
   const [editData, setEditData] = useState({});
   
   const [showAddEntry, setShowAddEntry] = useState(false);
-  const [nEn, setNEn] = useState({m:"Apr",t:"s",basic:0,hra:0,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""});
+  const [nEn, setNEn] = useState({m:"Apr",t:"s",basic:0,hra:0,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""});
   const [showBulk, setShowBulk] = useState(false);
   const [bulkData, setBulkData] = useState({});
   const [showOffCycle, setShowOffCycle] = useState(false);
-  const [offCycleData, setOffCycleData] = useState({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, pt:200, tds:0, note:""});
+  const [offCycleData, setOffCycleData] = useState({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""});
 
   const idR = useRef(""), pwR = useRef("");
   const myE = ses?.role === "e" ? emps.find(e=>e.id===ses.id) : null;
@@ -341,13 +341,13 @@ export default function App() {
 
   const addLedgerEntry = () => {
     if(!pEmp) return alert("Select Employee First");
-    const e = {...nEn, basic:+nEn.basic, hra:+nEn.hra, conv:+nEn.conv, med:+nEn.med, inc:+nEn.inc, oth:+nEn.oth, lop:+nEn.lop, adv:+nEn.adv, pt:+nEn.pt, tds:+nEn.tds};
+    const e = {...nEn, basic:+nEn.basic, hra:+nEn.hra, conv:+nEn.conv, med:+nEn.med, inc:+nEn.inc, oth:+nEn.oth, lop:+nEn.lop, adv:+nEn.adv, pt:+nEn.pt, tds:+nEn.tds, othD:+nEn.othD};
     setPay({...pay, [pEmp]: {...pay[pEmp], [fy]: [...(pay[pEmp]?.[fy]||[]), e]}}); setShowAddEntry(false);
   };
 
   const openBulkPayroll = () => {
     const defaults = {};
-    emps.filter(e=>e.status==="Active").forEach(emp => { defaults[emp.id] = {basic:emp.basic, hra:Math.round((emp.basic||0)*0.4), conv:800, med:1500, inc:0, lop:0, pt:200, tds:0, note:""}; });
+    emps.filter(e=>e.status==="Active").forEach(emp => { defaults[emp.id] = {basic:emp.basic, hra:Math.round((emp.basic||0)*0.4), conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""}; });
     setBulkData(defaults); setShowBulk(true); setShowOffCycle(false);
   };
 
@@ -356,7 +356,7 @@ export default function App() {
     Object.keys(bulkData).forEach(eid => {
       const d = bulkData[eid]; const existing = nextPay[eid]?.[fy]||[];
       if(!existing.find(r=>r.m===mo && r.t==="s")) {
-        nextPay[eid] = {...nextPay[eid], [fy]: [...existing, {m:mo, t:"s", basic:+d.basic, hra:+d.hra, conv:+d.conv, med:+d.med, inc:+d.inc, oth:0, lop:+d.lop, adv:0, pt:+d.pt, tds:+d.tds, note:d.note||""}]};
+        nextPay[eid] = {...nextPay[eid], [fy]: [...existing, {m:mo, t:"s", basic:+d.basic, hra:+d.hra, conv:+d.conv, med:+d.med, inc:+d.inc, oth:+d.oth, lop:+d.lop, adv:+d.adv, pt:+d.pt, tds:+d.tds, othD:+d.othD, note:d.note||""}]};
       }
     });
     setPay(nextPay); setShowBulk(false); alert(`Bulk Payroll processed for ${mL(mo, fy)}`);
@@ -364,16 +364,17 @@ export default function App() {
 
   const saveOffCycle = () => {
     if(!offCycleData.empId) return alert("Select an employee");
-    const entry = { m: mo, t: "s", basic: +offCycleData.basic, hra: +offCycleData.hra, conv: +offCycleData.conv, med: +offCycleData.med, inc: +offCycleData.inc, oth: +offCycleData.oth, lop: +offCycleData.lop, adv: 0, pt: +offCycleData.pt, tds: +offCycleData.tds, note: offCycleData.note || "Off-Cycle" };
+    const entry = { m: mo, t: "s", basic: +offCycleData.basic, hra: +offCycleData.hra, conv: +offCycleData.conv, med: +offCycleData.med, inc: +offCycleData.inc, oth: +offCycleData.oth, lop: +offCycleData.lop, adv: +offCycleData.adv, pt: +offCycleData.pt, tds: +offCycleData.tds, othD: +offCycleData.othD, note: offCycleData.note || "Off-Cycle" };
     setPay(prev => ({ ...prev, [offCycleData.empId]: { ...prev[offCycleData.empId], [fy]: [...(prev[offCycleData.empId]?.[fy]||[]), entry] } }));
-    setShowOffCycle(false); setOffCycleData({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, pt:200, tds:0, note:""});
+    setShowOffCycle(false); setOffCycleData({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""});
     alert(`Off-Cycle Payroll saved for ${emps.find(e=>e.id===offCycleData.empId)?.name}`);
   };
 
   const handleExportLedger = () => {
-    const head = ["Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Others", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Total Deductions", "Taxable Income", "Net Amount", "Note/Comments"];
+    const head = ["S.No", "Emp ID", "Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Other Earnings", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Other Deductions", "Total Deductions", "Taxable Income", "Net Amount", "Note/Comments"];
     const rows = [head]; const tEmps = ses?.role==="a" ? (lEmp ? emps.filter(e=>e.id===lEmp) : emps) : [myE];
-    tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([e.name, mL(r.m, fy), r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.adv||0, r.pt||0, r.tds||0, dd(r), txInc(r), np(r), r.note||""])); });
+    let sno = 1;
+    tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([sno++, e.id, e.name, mL(r.m, fy), r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.adv||0, r.pt||0, r.tds||0, r.othD||0, dd(r), txInc(r), np(r), r.note||""])); });
     exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
   };
 
@@ -419,8 +420,9 @@ export default function App() {
               <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={openBulkPayroll}>+ Run Bulk Payroll</button>
               <button style={{...btn,background:"#185FA5",color:"#fff"}} onClick={()=>{setShowOffCycle(true); setShowBulk(false);}}>+ Off-Cycle Payroll</button>
               <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
-                const rows = [["Employee","Role","Basic","Inc","Gross","PT","TDS","Taxable Income","Net","Note"]];
-                emps.forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([e.name,e.desig,r.basic,r.inc,gr(r),r.pt,r.tds,txInc(r),np(r),r.note||""])));
+                const rows = [["S.No","Emp ID","Employee","Role","Basic","HRA","Conv","Med","Inc","Oth Earn","Gross","LOP","Advance","PT","TDS","Oth Ded","Total Deductions","Taxable Income","Net","Note"]];
+                let sno = 1;
+                emps.forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([sno++,e.id,e.name,e.desig,r.basic,r.hra,r.conv,r.med,r.inc,r.oth,gr(r),r.lop,r.adv,r.pt,r.tds,r.othD||0,dd(r),txInc(r),np(r),r.note||""])));
                 exportCSV(rows, `Payroll_${mL(mo, fy)}.csv`);
               }}>Export CSV</button>
             </div>}
@@ -435,17 +437,42 @@ export default function App() {
 
           {showBulk && ses.role==="a" && (
             <div style={{...card, border:"1px solid #1a1a2e", marginBottom:20}}>
-              <h3>Bulk Payroll for {mL(mo, fy)}</h3>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <h3 style={{margin:0}}>Bulk Payroll for {mL(mo, fy)}</h3>
+                <div>
+                  <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={saveBulkPayroll}>Save All</button>
+                  <button style={{...btn,marginLeft:10}} onClick={()=>setShowBulk(false)}>Cancel</button>
+                </div>
+              </div>
               <div style={{overflowX:"auto"}}>
                 <table style={{width:"100%",fontSize:12,borderCollapse:"collapse"}}>
-                  <thead><tr style={{textAlign:"left"}}><th>Employee</th><th>Basic</th><th>HRA</th><th>Inc</th><th>LOP</th><th>PT</th><th>Note</th><th>Net</th></tr></thead>
-                  <tbody>{Object.keys(bulkData).map(eid => {
+                  <thead><tr style={{textAlign:"left",whiteSpace:"nowrap"}}>
+                    <th style={{padding:8}}>S.No</th><th style={{padding:8}}>Emp ID</th><th style={{padding:8}}>Employee</th><th style={{padding:8}}>Basic</th><th style={{padding:8}}>HRA</th><th style={{padding:8}}>Conv.</th><th style={{padding:8}}>Med.</th><th style={{padding:8}}>Inc.</th><th style={{padding:8}}>Oth Earn</th><th style={{padding:8}}>LOP</th><th style={{padding:8}}>Advance</th><th style={{padding:8}}>PT</th><th style={{padding:8}}>TDS</th><th style={{padding:8}}>Oth Ded.</th><th style={{padding:8}}>Note</th><th style={{padding:8}}>Net</th>
+                  </tr></thead>
+                  <tbody>{Object.keys(bulkData).map((eid, idx) => {
                     const d = bulkData[eid]; const upd = (k,v) => setBulkData({...bulkData, [eid]:{...d, [k]:v}});
-                    return (<tr key={eid}><td>{emps.find(e=>e.id===eid)?.name}</td><td><input style={sInp} type="number" value={d.basic} onChange={e=>upd("basic",e.target.value)}/></td><td><input style={sInp} type="number" value={d.hra} onChange={e=>upd("hra",e.target.value)}/></td><td><input style={sInp} type="number" value={d.inc} onChange={e=>upd("inc",e.target.value)}/></td><td><input style={sInp} type="number" value={d.lop} onChange={e=>upd("lop",e.target.value)}/></td><td><input style={sInp} type="number" value={d.pt} onChange={e=>upd("pt",e.target.value)}/></td><td><input style={{...sInp, width: 120}} type="text" placeholder="Optional" value={d.note||""} onChange={e=>upd("note",e.target.value)}/></td><td style={{fontWeight:"bold",color:"#1D9E75"}}>{f$((+d.basic||0)+(+d.hra||0)+(+d.inc||0)-(+d.lop||0)-(+d.pt||0))}</td></tr>)
+                    const bInp = {padding:"6px",border:"1px solid #ddd",borderRadius:4,width:70,fontSize:12};
+                    return (<tr key={eid} style={{borderBottom:"1px solid #eee"}}>
+                      <td style={{padding:8, color:"#666"}}>{idx + 1}</td>
+                      <td style={{padding:8, color:"#666"}}>{eid}</td>
+                      <td style={{whiteSpace:"nowrap",paddingRight:10}}>{emps.find(e=>e.id===eid)?.name}</td>
+                      <td><input style={bInp} type="number" value={d.basic} onChange={e=>upd("basic",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.hra} onChange={e=>upd("hra",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.conv} onChange={e=>upd("conv",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.med} onChange={e=>upd("med",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.inc} onChange={e=>upd("inc",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.oth} onChange={e=>upd("oth",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.lop} onChange={e=>upd("lop",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.adv} onChange={e=>upd("adv",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.pt} onChange={e=>upd("pt",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.tds} onChange={e=>upd("tds",e.target.value)}/></td>
+                      <td><input style={bInp} type="number" value={d.othD} onChange={e=>upd("othD",e.target.value)}/></td>
+                      <td><input style={{...bInp, width: 100}} type="text" placeholder="Optional" value={d.note||""} onChange={e=>upd("note",e.target.value)}/></td>
+                      <td style={{fontWeight:"bold",color:"#1D9E75",paddingLeft:10}}>{f$((+d.basic||0)+(+d.hra||0)+(+d.conv||0)+(+d.med||0)+(+d.inc||0)+(+d.oth||0)-(+d.lop||0)-(+d.adv||0)-(+d.pt||0)-(+d.tds||0)-(+d.othD||0))}</td>
+                    </tr>)
                   })}</tbody>
                 </table>
               </div>
-              <button style={{...btn,background:"#1D9E75",color:"#fff",marginTop:15}} onClick={saveBulkPayroll}>Save All</button>
             </div>
           )}
 
@@ -454,7 +481,7 @@ export default function App() {
               <h3>Run Off-Cycle Payroll for {mL(mo, fy)}</h3>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:15}}>
                 <div><label style={lbl}>Employee</label><select style={sInp} value={offCycleData.empId} onChange={e=>{const emp=emps.find(x=>x.id===e.target.value);setOffCycleData({...offCycleData, empId:e.target.value, basic:emp?.basic||0, hra:Math.round((emp?.basic||0)*0.4)});}}><option value="">Select...</option>{emps.filter(e=>e.status==="Active").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
-                {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Others","oth"],["LOP","lop"],["PT","pt"],["TDS","tds"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={offCycleData[k]} onChange={e=>setOffCycleData({...offCycleData,[k]:e.target.value})}/></div>))}
+                {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Oth Earn","oth"],["LOP","lop"],["Advance","adv"],["PT","pt"],["TDS","tds"],["Oth Ded","othD"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={offCycleData[k]} onChange={e=>setOffCycleData({...offCycleData,[k]:e.target.value})}/></div>))}
                 <div style={{gridColumn:"1/-1"}}><label style={lbl}>Note / Reason</label><input style={sInp} value={offCycleData.note} placeholder="e.g. Arrears" onChange={e=>setOffCycleData({...offCycleData,note:e.target.value})}/></div>
               </div>
               <button style={{...btn,background:"#185FA5",color:"#fff",marginRight:10}} onClick={saveOffCycle}>Save Off-Cycle Entry</button>
@@ -464,11 +491,15 @@ export default function App() {
 
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f8f9fa",textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Role</th><th style={thS}>Basic</th><th style={thS}>Inc.</th><th style={thS}>Gross</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Taxable</th><th style={thS}>Net</th><th style={thS}>Note</th><th style={thS}>Payslip</th></tr></thead>
-              <tbody>{emps.filter(e => ses.role==="a" ? true : e.id===ses.id).map(emp=>{
+              <thead><tr style={{background:"#f8f9fa",textAlign:"left",whiteSpace:"nowrap"}}>
+                <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Role</th><th style={thS}>Basic</th><th style={thS}>HRA</th><th style={thS}>Conv</th><th style={thS}>Med</th><th style={thS}>Inc</th><th style={thS}>Oth Earn</th><th style={thS}>Gross</th><th style={thS}>LOP</th><th style={thS}>Adv</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Oth Ded</th><th style={thS}>Tot. Ded</th><th style={thS}>Net</th><th style={thS}>Note</th><th style={thS}>Payslip</th>
+              </tr></thead>
+              <tbody>{emps.filter(e => ses.role==="a" ? true : e.id===ses.id).map((emp, idx)=>{
                 const rows = (pay[emp.id]?.[fy]||[]).filter(r=>r.m===mo);
-                if(!rows.length) return <tr key={emp.id}><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td colSpan={9} style={{...tdS,color:"#888",textAlign:"center"}}>No entry</td></tr>;
-                return rows.map((r,i)=>(<tr key={emp.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.inc)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(gr(r))}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(txInc(r))}</td><td style={{...tdS,color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td><td style={{...tdS,fontSize:11,color:"#666"}}>{r.note||"-"}</td><td style={tdS}><button style={{...btn,padding:"4px 8px"}} onClick={()=>setSlip(buildSlip(emp,mo,fyL(fy),rows,att[emp.id]?.[mo]))}>PDF</button></td></tr>));
+                if(!rows.length) return <tr key={emp.id}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td colSpan={16} style={{...tdS,color:"#888",textAlign:"center"}}>No entry</td></tr>;
+                return rows.map((r,i)=>(<tr key={emp.id+i} style={{borderBottom:"1px solid #eee"}}>
+                  <td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.hra)}</td><td style={tdS}>{f$(r.conv)}</td><td style={tdS}>{f$(r.med)}</td><td style={tdS}>{f$(r.inc)}</td><td style={tdS}>{f$(r.oth)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(gr(r))}</td><td style={tdS}>{f$(r.lop)}</td><td style={tdS}>{f$(r.adv)}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={tdS}>{f$(r.othD||0)}</td><td style={{...tdS,color:"#D85A30"}}>{f$(dd(r))}</td><td style={{...tdS,color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td><td style={{...tdS,fontSize:11,color:"#666"}}>{r.note||"-"}</td><td style={tdS}><button style={{...btn,padding:"4px 8px"}} onClick={()=>setSlip(buildSlip(emp,mo,fyL(fy),rows,att[emp.id]?.[mo]))}>PDF</button></td>
+                </tr>));
               })}</tbody>
             </table>
           </div>
@@ -480,8 +511,9 @@ export default function App() {
         <div>
           <div style={{marginBottom:15,display:"flex",justifyContent:"flex-end",gap:10}}>
             <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
-              const rows = [["ID","Name","Designation","Email","Phone","PAN","Category","Basic Salary","Bank Details","Start Date","End Date","Status","Comments"]];
-              emps.forEach(e => rows.push([e.id,e.name,e.desig,e.email,e.phone,e.pan,e.cat,e.basic,e.bank,e.start,e.end,e.status,e.comments||""]));
+              const rows = [["S.No","Emp ID","Name","Designation","Email","Phone","PAN","Category","Basic Salary","Bank Details","Start Date","End Date","Status","Comments"]];
+              let sno = 1;
+              emps.forEach(e => rows.push([sno++,e.id,e.name,e.desig,e.email,e.phone,e.pan,e.cat,e.basic,e.bank,e.start,e.end,e.status,e.comments||""]));
               exportCSV(rows, `Employees_${fyL(fy)}.csv`);
             }}>Download Excel</button>
             <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>setShowAddEmp(!showAddEmp)}>+ Add Employee</button>
@@ -528,8 +560,8 @@ export default function App() {
 
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f4f4f4",textAlign:"left"}}><th style={thS}>ID</th><th style={thS}>Name</th><th style={thS}>Basic</th><th style={thS}>Drive Folder</th><th style={thS}>Status</th><th style={thS}>Comments</th><th style={thS}>Action</th></tr></thead>
-              <tbody>{emps.map(e=>(<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{e.id}</td><td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td><td style={tdS}>{f$(e.basic)}</td><td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer">Link</a> : "-"}</td><td style={tdS}>{e.status}</td><td style={tdS}>{e.comments||"-"}</td><td style={tdS}><div style={{display:"flex",gap:5}}><button style={{...btn,padding:"4px 8px"}} onClick={()=>{setEditEmp(e.id);setEditData({...e});}}>Edit</button> <button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setEmps(p=>p.filter(x=>x.id!==e.id))}>Del</button></div></td></tr>))}</tbody>
+              <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Basic</th><th style={thS}>Drive Folder</th><th style={thS}>Status</th><th style={thS}>Comments</th><th style={thS}>Action</th></tr></thead>
+              <tbody>{emps.map((e, idx)=>(<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={tdS}>{e.id}</td><td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td><td style={tdS}>{f$(e.basic)}</td><td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer">Link</a> : "-"}</td><td style={tdS}>{e.status}</td><td style={tdS}>{e.comments||"-"}</td><td style={tdS}><div style={{display:"flex",gap:5}}><button style={{...btn,padding:"4px 8px"}} onClick={()=>{setEditEmp(e.id);setEditData({...e});}}>Edit</button> <button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setEmps(p=>p.filter(x=>x.id!==e.id))}>Del</button></div></td></tr>))}</tbody>
             </table>
           </div>
         </div>
@@ -541,10 +573,10 @@ export default function App() {
           <div style={{display:"flex",gap:10,marginBottom:20}}><select value={mo} onChange={e=>setMo(e.target.value)} style={sInp}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f4f4f4",textAlign:"left"}}><th style={thS}>Name</th><th>Present</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
-              <tbody>{emps.filter(e => ses.role==="a" ? e.status==="Active" : e.id===ses.id).map(e=>{
+              <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th>Present</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
+              <tbody>{emps.filter(e => ses.role==="a" ? e.status==="Active" : e.id===ses.id).map((e, idx)=>{
                 const a = att[e.id]?.[mo]||{}; const upd = (f,v) => setAtt(p=>({...p,[e.id]:{...p[e.id],[mo]:{...p[e.id]?.[mo],[f]:v}}}));
-                return (<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{e.name}</td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.present!==undefined?a.present:""} onChange={x=>upd("present",x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.leave!==undefined?a.leave:""} onChange={x=>upd("leave",x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.bal!==undefined?a.bal:""} onChange={x=>upd("bal",x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.lop!==undefined?a.lop:""} onChange={x=>upd("lop",x.target.value)}/></td><td><input style={sInp} disabled={ses.role!=="a"} value={a.comments||""} onChange={x=>upd("comments",x.target.value)}/></td></tr>)
+                return (<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{e.id}</td><td style={tdS}>{e.name}</td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.present!==undefined?a.present:""} onChange={x=>upd("present",x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.leave!==undefined?a.leave:""} onChange={x=>upd("leave",x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.bal!==undefined?a.bal:""} onChange={x=>upd("bal",x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.lop!==undefined?a.lop:""} onChange={x=>upd("lop",x.target.value)}/></td><td><input style={sInp} disabled={ses.role!=="a"} value={a.comments||""} onChange={x=>upd("comments",x.target.value)}/></td></tr>)
               })}</tbody>
             </table>
           </div>
@@ -554,17 +586,20 @@ export default function App() {
               <div style={{display:"flex",justifyContent:"space-between",marginTop:30,marginBottom:15,alignItems:"center"}}>
                 <h3 style={{margin:0}}>Leave Register ({fyL(fy)})</h3>
                 <button style={{...btn,background:"#1D9E75",color:"#fff",border:"none"}} onClick={()=>{
-                  const rows = [["Employee","Month","Present","Leave","Balance","LOP","Comments"]];
-                  emps.forEach(e=>MS.forEach(m=>{const a=att[e.id]?.[m]; if(a) rows.push([e.name,mL(m, fy),a.present||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);}));
+                  const rows = [["S.No","Emp ID","Employee","Month","Present","Leave","Balance","LOP","Comments"]];
+                  let sno = 1;
+                  emps.forEach(e=>MS.forEach(m=>{const a=att[e.id]?.[m]; if(a) rows.push([sno++,e.id,e.name,mL(m, fy),a.present||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);}));
                   exportCSV(rows, `Leave_Register_${fyL(fy)}.csv`);
                 }}>Download Excel</button>
               </div>
               <div style={{...card, padding:0, overflowX:"auto"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-                  <thead><tr style={{background:"#1a1a2e",color:"#fff",textAlign:"left"}}><th style={thS}>Employee</th>{MS.map(m=><th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
+                  <thead><tr style={{background:"#1a1a2e",color:"#fff",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th>{MS.map(m=><th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
                   <tbody>
-                    {emps.map(e=>(
+                    {emps.map((e, idx)=>(
                       <tr key={e.id} style={{borderBottom:"1px solid #eee"}}>
+                        <td style={{...tdS,color:"#666"}}>{idx + 1}</td>
+                        <td style={{...tdS,color:"#666"}}>{e.id}</td>
                         <td style={tdS}><b>{e.name}</b></td>
                         {MS.map(m=><td key={m} style={tdS}>{(att[e.id]?.[m]?.leave>0) ? `${att[e.id]?.[m]?.leave} L` : "-"}</td>)}
                       </tr>
@@ -588,7 +623,7 @@ export default function App() {
                 <div><label style={lbl}>Employee</label><select style={sInp} value={pEmp} onChange={e=>setPEmp(e.target.value)}><option value="">Select...</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
                 <div><label style={lbl}>Month</label><select style={sInp} value={nEn.m} onChange={e=>setNEn({...nEn,m:e.target.value})}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
                 <div><label style={lbl}>Type</label><select style={sInp} value={nEn.t} onChange={e=>setNEn({...nEn,t:e.target.value})}><option value="s">Salary</option><option value="i">Incentive</option></select></div>
-                {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Others","oth"],["LOP","lop"],["Adv","adv"],["PT","pt"],["TDS","tds"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={e=>setNEn({...nEn,[k]:e.target.value})}/></div>))}
+                {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Other Earn","oth"],["LOP","lop"],["Advance","adv"],["PT","pt"],["TDS","tds"],["Other Ded","othD"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={e=>setNEn({...nEn,[k]:e.target.value})}/></div>))}
                 <div style={{gridColumn:"1/-1"}}><label style={lbl}>Note / Comments</label><input style={sInp} value={nEn.note} placeholder="Optional reason for entry" onChange={e=>setNEn({...nEn,note:e.target.value})}/></div>
               </div>
               <button style={{...btn,background:"green",color:"#fff"}} onClick={addLedgerEntry}>Save Entry</button><button style={{...btn,marginLeft:10}} onClick={()=>setShowAddEntry(false)}>Cancel</button>
@@ -596,10 +631,37 @@ export default function App() {
           )}
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-              <thead style={{background:"#1a1a2e",color:"#fff"}}><tr style={{textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Month</th><th>Basic</th><th>Inc</th><th>Gross</th><th>LOP</th><th>Adv</th><th>PT</th><th>TDS</th><th>Tot. Ded</th><th>Net</th><th>Note</th>{ses.role==="a" && <th style={thS}>Action</th>}</tr></thead>
-              <tbody>{emps.filter(e => ses.role==="a" ? (!lEmp||e.id===lEmp) : e.id===ses.id).flatMap(e=>(pay[e.id]?.[fy]||[]).filter(r=>!mo||r.m===mo).map((r,i)=>(
-                <tr key={e.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}><b>{e.name}</b></td><td style={tdS}>{mL(r.m, fy)}</td><td>{f$(r.basic)}</td><td>{f$(r.inc)}</td><td style={{fontWeight:"bold"}}>{f$(gr(r))}</td><td>{f$(r.lop)}</td><td>{f$(r.adv)}</td><td>{f$(r.pt)}</td><td>{f$(r.tds)}</td><td style={{color:"#D85A30"}}>{f$(dd(r))}</td><td style={{color:"#1D9E75",fontWeight:"bold",fontSize:12}}>{f$(np(r))}</td><td style={{fontSize:11,color:"#666"}}>{r.note||"-"}</td>{ses.role==="a" && <td style={tdS}><button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setPay({...pay,[e.id]:{...pay[e.id],[fy]:pay[e.id][fy].filter((_,idx)=>idx!==i)}})}>Del</button></td>}</tr>
-              )))}</tbody>
+              <thead style={{background:"#1a1a2e",color:"#fff"}}><tr style={{textAlign:"left",whiteSpace:"nowrap"}}>
+                <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Basic</th><th style={thS}>HRA</th><th style={thS}>Conv</th><th style={thS}>Med</th><th style={thS}>Inc</th><th style={thS}>Oth Earn</th><th style={thS}>Gross</th><th style={thS}>LOP</th><th style={thS}>Adv</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Oth Ded</th><th style={thS}>Tot. Ded</th><th style={thS}>Net</th><th style={thS}>Note</th>{ses.role==="a" && <th style={thS}>Action</th>}
+              </tr></thead>
+              <tbody>
+                {emps.filter(e => ses.role==="a" ? (!lEmp||e.id===lEmp) : e.id===ses.id)
+                  .flatMap(e=>(pay[e.id]?.[fy]||[]).filter(r=>!mo||r.m===mo).map((r,i)=>({e,r,i})))
+                  .map((item, idx) => (
+                  <tr key={item.e.id+item.i} style={{borderBottom:"1px solid #eee"}}>
+                    <td style={{...tdS,color:"#666"}}>{idx + 1}</td>
+                    <td style={{...tdS,color:"#666"}}>{item.e.id}</td>
+                    <td style={tdS}><b>{item.e.name}</b></td>
+                    <td style={tdS}>{mL(item.r.m, fy)}</td>
+                    <td style={tdS}>{f$(item.r.basic)}</td>
+                    <td style={tdS}>{f$(item.r.hra)}</td>
+                    <td style={tdS}>{f$(item.r.conv)}</td>
+                    <td style={tdS}>{f$(item.r.med)}</td>
+                    <td style={tdS}>{f$(item.r.inc)}</td>
+                    <td style={tdS}>{f$(item.r.oth)}</td>
+                    <td style={{...tdS,fontWeight:"bold"}}>{f$(gr(item.r))}</td>
+                    <td style={tdS}>{f$(item.r.lop)}</td>
+                    <td style={tdS}>{f$(item.r.adv)}</td>
+                    <td style={tdS}>{f$(item.r.pt)}</td>
+                    <td style={tdS}>{f$(item.r.tds)}</td>
+                    <td style={tdS}>{f$(item.r.othD||0)}</td>
+                    <td style={{...tdS,color:"#D85A30"}}>{f$(dd(item.r))}</td>
+                    <td style={{...tdS,color:"#1D9E75",fontWeight:"bold",fontSize:12}}>{f$(np(item.r))}</td>
+                    <td style={{...tdS,fontSize:11,color:"#666"}}>{item.r.note||"-"}</td>
+                    {ses.role==="a" && <td style={tdS}><button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setPay({...pay,[item.e.id]:{...pay[item.e.id],[fy]:pay[item.e.id][fy].filter((_,idxTarget)=>idxTarget!==item.i)}})}>Del</button></td>}
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </div>
@@ -625,8 +687,8 @@ export default function App() {
 }
 
 const card = {padding:25,border:"1px solid #eee",borderRadius:8,background:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,0.04)",marginBottom:20};
-const thS = {padding:12,fontWeight:500};
-const tdS = {padding:12};
+const thS = {padding:12,fontWeight:500,whiteSpace:"nowrap"};
+const tdS = {padding:12,whiteSpace:"nowrap"};
 const sInp = {padding:"8px 12px",border:"1px solid #ddd",borderRadius:4,width:"100%",fontSize:13};
 const btn = {padding:"8px 16px",background:"#fff",border:"1px solid #ddd",borderRadius:4,cursor:"pointer",fontSize:12};
 const lbl = {display:"block",fontSize:11,color:"#666",marginBottom:4};
