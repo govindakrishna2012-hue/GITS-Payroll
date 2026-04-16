@@ -7,7 +7,6 @@ const MS = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","M
 const DY = {Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31,Jan:31,Feb:28,Mar:31};
 
 const fyL = y => `${parseInt(y||0)}-${String(parseInt(y||0)+1).slice(-2)}`;
-// Upgraded mL function: formats "Apr" into "Apr-25" or "Jan-26" based on the FY
 const mL  = (m, y) => `${m}-${String(["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1).slice(-2)}`;
 const f$  = n => Math.round(n||0).toLocaleString("en-IN");
 const gr  = r => (r.basic||0) + (r.hra||0) + (r.conv||0) + (r.med||0) + (r.inc||0) + (r.oth||0);
@@ -372,9 +371,9 @@ export default function App() {
   };
 
   const handleExportLedger = () => {
-    const head = ["Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Others", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Total Deductions", "Taxable Income", "Net Amount"];
+    const head = ["Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Others", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Total Deductions", "Taxable Income", "Net Amount", "Note/Comments"];
     const rows = [head]; const tEmps = ses?.role==="a" ? (lEmp ? emps.filter(e=>e.id===lEmp) : emps) : [myE];
-    tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([e.name, mL(r.m, fy), r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.adv||0, r.pt||0, r.tds||0, dd(r), txInc(r), np(r)])); });
+    tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([e.name, mL(r.m, fy), r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.adv||0, r.pt||0, r.tds||0, dd(r), txInc(r), np(r), r.note||""])); });
     exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
   };
 
@@ -420,8 +419,8 @@ export default function App() {
               <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={openBulkPayroll}>+ Run Bulk Payroll</button>
               <button style={{...btn,background:"#185FA5",color:"#fff"}} onClick={()=>{setShowOffCycle(true); setShowBulk(false);}}>+ Off-Cycle Payroll</button>
               <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
-                const rows = [["Employee","Role","Basic","Inc","Gross","PT","TDS","Taxable Income","Net"]];
-                emps.forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([e.name,e.desig,r.basic,r.inc,gr(r),r.pt,r.tds,txInc(r),np(r)])));
+                const rows = [["Employee","Role","Basic","Inc","Gross","PT","TDS","Taxable Income","Net","Note"]];
+                emps.forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([e.name,e.desig,r.basic,r.inc,gr(r),r.pt,r.tds,txInc(r),np(r),r.note||""])));
                 exportCSV(rows, `Payroll_${mL(mo, fy)}.csv`);
               }}>Export CSV</button>
             </div>}
@@ -439,10 +438,10 @@ export default function App() {
               <h3>Bulk Payroll for {mL(mo, fy)}</h3>
               <div style={{overflowX:"auto"}}>
                 <table style={{width:"100%",fontSize:12,borderCollapse:"collapse"}}>
-                  <thead><tr style={{textAlign:"left"}}><th>Employee</th><th>Basic</th><th>HRA</th><th>Inc</th><th>LOP</th><th>PT</th><th>Net</th></tr></thead>
+                  <thead><tr style={{textAlign:"left"}}><th>Employee</th><th>Basic</th><th>HRA</th><th>Inc</th><th>LOP</th><th>PT</th><th>Note</th><th>Net</th></tr></thead>
                   <tbody>{Object.keys(bulkData).map(eid => {
                     const d = bulkData[eid]; const upd = (k,v) => setBulkData({...bulkData, [eid]:{...d, [k]:v}});
-                    return (<tr key={eid}><td>{emps.find(e=>e.id===eid)?.name}</td><td><input style={sInp} type="number" value={d.basic} onChange={e=>upd("basic",e.target.value)}/></td><td><input style={sInp} type="number" value={d.hra} onChange={e=>upd("hra",e.target.value)}/></td><td><input style={sInp} type="number" value={d.inc} onChange={e=>upd("inc",e.target.value)}/></td><td><input style={sInp} type="number" value={d.lop} onChange={e=>upd("lop",e.target.value)}/></td><td><input style={sInp} type="number" value={d.pt} onChange={e=>upd("pt",e.target.value)}/></td><td style={{fontWeight:"bold",color:"#1D9E75"}}>{f$((+d.basic||0)+(+d.hra||0)+(+d.inc||0)-(+d.lop||0)-(+d.pt||0))}</td></tr>)
+                    return (<tr key={eid}><td>{emps.find(e=>e.id===eid)?.name}</td><td><input style={sInp} type="number" value={d.basic} onChange={e=>upd("basic",e.target.value)}/></td><td><input style={sInp} type="number" value={d.hra} onChange={e=>upd("hra",e.target.value)}/></td><td><input style={sInp} type="number" value={d.inc} onChange={e=>upd("inc",e.target.value)}/></td><td><input style={sInp} type="number" value={d.lop} onChange={e=>upd("lop",e.target.value)}/></td><td><input style={sInp} type="number" value={d.pt} onChange={e=>upd("pt",e.target.value)}/></td><td><input style={{...sInp, width: 120}} type="text" placeholder="Optional" value={d.note||""} onChange={e=>upd("note",e.target.value)}/></td><td style={{fontWeight:"bold",color:"#1D9E75"}}>{f$((+d.basic||0)+(+d.hra||0)+(+d.inc||0)-(+d.lop||0)-(+d.pt||0))}</td></tr>)
                   })}</tbody>
                 </table>
               </div>
@@ -465,11 +464,11 @@ export default function App() {
 
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f8f9fa",textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Role</th><th style={thS}>Basic</th><th style={thS}>Inc.</th><th style={thS}>Gross</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Taxable</th><th style={thS}>Net</th><th style={thS}>Payslip</th></tr></thead>
+              <thead><tr style={{background:"#f8f9fa",textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Role</th><th style={thS}>Basic</th><th style={thS}>Inc.</th><th style={thS}>Gross</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Taxable</th><th style={thS}>Net</th><th style={thS}>Note</th><th style={thS}>Payslip</th></tr></thead>
               <tbody>{emps.filter(e => ses.role==="a" ? true : e.id===ses.id).map(emp=>{
                 const rows = (pay[emp.id]?.[fy]||[]).filter(r=>r.m===mo);
-                if(!rows.length) return <tr key={emp.id}><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td colSpan={8} style={{...tdS,color:"#888",textAlign:"center"}}>No entry</td></tr>;
-                return rows.map((r,i)=>(<tr key={emp.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.inc)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(gr(r))}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(txInc(r))}</td><td style={{...tdS,color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td><td style={tdS}><button style={{...btn,padding:"4px 8px"}} onClick={()=>setSlip(buildSlip(emp,mo,fyL(fy),rows,att[emp.id]?.[mo]))}>PDF</button></td></tr>));
+                if(!rows.length) return <tr key={emp.id}><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td colSpan={9} style={{...tdS,color:"#888",textAlign:"center"}}>No entry</td></tr>;
+                return rows.map((r,i)=>(<tr key={emp.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.inc)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(gr(r))}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(txInc(r))}</td><td style={{...tdS,color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td><td style={{...tdS,fontSize:11,color:"#666"}}>{r.note||"-"}</td><td style={tdS}><button style={{...btn,padding:"4px 8px"}} onClick={()=>setSlip(buildSlip(emp,mo,fyL(fy),rows,att[emp.id]?.[mo]))}>PDF</button></td></tr>));
               })}</tbody>
             </table>
           </div>
@@ -590,15 +589,16 @@ export default function App() {
                 <div><label style={lbl}>Month</label><select style={sInp} value={nEn.m} onChange={e=>setNEn({...nEn,m:e.target.value})}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
                 <div><label style={lbl}>Type</label><select style={sInp} value={nEn.t} onChange={e=>setNEn({...nEn,t:e.target.value})}><option value="s">Salary</option><option value="i">Incentive</option></select></div>
                 {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Others","oth"],["LOP","lop"],["Adv","adv"],["PT","pt"],["TDS","tds"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={e=>setNEn({...nEn,[k]:e.target.value})}/></div>))}
+                <div style={{gridColumn:"1/-1"}}><label style={lbl}>Note / Comments</label><input style={sInp} value={nEn.note} placeholder="Optional reason for entry" onChange={e=>setNEn({...nEn,note:e.target.value})}/></div>
               </div>
               <button style={{...btn,background:"green",color:"#fff"}} onClick={addLedgerEntry}>Save Entry</button><button style={{...btn,marginLeft:10}} onClick={()=>setShowAddEntry(false)}>Cancel</button>
             </div>
           )}
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-              <thead style={{background:"#1a1a2e",color:"#fff"}}><tr style={{textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Month</th><th>Basic</th><th>Inc</th><th>Gross</th><th>LOP</th><th>Adv</th><th>PT</th><th>TDS</th><th>Tot. Ded</th><th>Net</th>{ses.role==="a" && <th style={thS}>Action</th>}</tr></thead>
+              <thead style={{background:"#1a1a2e",color:"#fff"}}><tr style={{textAlign:"left"}}><th style={thS}>Employee</th><th style={thS}>Month</th><th>Basic</th><th>Inc</th><th>Gross</th><th>LOP</th><th>Adv</th><th>PT</th><th>TDS</th><th>Tot. Ded</th><th>Net</th><th>Note</th>{ses.role==="a" && <th style={thS}>Action</th>}</tr></thead>
               <tbody>{emps.filter(e => ses.role==="a" ? (!lEmp||e.id===lEmp) : e.id===ses.id).flatMap(e=>(pay[e.id]?.[fy]||[]).filter(r=>!mo||r.m===mo).map((r,i)=>(
-                <tr key={e.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}><b>{e.name}</b></td><td style={tdS}>{mL(r.m, fy)}</td><td>{f$(r.basic)}</td><td>{f$(r.inc)}</td><td style={{fontWeight:"bold"}}>{f$(gr(r))}</td><td>{f$(r.lop)}</td><td>{f$(r.adv)}</td><td>{f$(r.pt)}</td><td>{f$(r.tds)}</td><td style={{color:"#D85A30"}}>{f$(dd(r))}</td><td style={{color:"#1D9E75",fontWeight:"bold",fontSize:12}}>{f$(np(r))}</td>{ses.role==="a" && <td style={tdS}><button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setPay({...pay,[e.id]:{...pay[e.id],[fy]:pay[e.id][fy].filter((_,idx)=>idx!==i)}})}>Del</button></td>}</tr>
+                <tr key={e.id+i} style={{borderBottom:"1px solid #eee"}}><td style={tdS}><b>{e.name}</b></td><td style={tdS}>{mL(r.m, fy)}</td><td>{f$(r.basic)}</td><td>{f$(r.inc)}</td><td style={{fontWeight:"bold"}}>{f$(gr(r))}</td><td>{f$(r.lop)}</td><td>{f$(r.adv)}</td><td>{f$(r.pt)}</td><td>{f$(r.tds)}</td><td style={{color:"#D85A30"}}>{f$(dd(r))}</td><td style={{color:"#1D9E75",fontWeight:"bold",fontSize:12}}>{f$(np(r))}</td><td style={{fontSize:11,color:"#666"}}>{r.note||"-"}</td>{ses.role==="a" && <td style={tdS}><button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>setPay({...pay,[e.id]:{...pay[e.id],[fy]:pay[e.id][fy].filter((_,idx)=>idx!==i)}})}>Del</button></td>}</tr>
               )))}</tbody>
             </table>
           </div>
