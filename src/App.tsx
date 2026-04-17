@@ -57,40 +57,19 @@ const exportCSV = (rows, fn) => {
   a.download = fn; document.body.appendChild(a); a.click(); setTimeout(() => document.body.removeChild(a), 100);
 };
 
-// 🟢 AGGREGATING PAYSLIP GENERATOR 🟢
 const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
-  // Reduces ALL entries for the selected month into a single, unified total
-  const sal = entries.reduce((acc, curr) => ({
-      basic: acc.basic + (Number(curr.basic) || 0),
-      hra: acc.hra + (Number(curr.hra) || 0),
-      conv: acc.conv + (Number(curr.conv) || 0),
-      med: acc.med + (Number(curr.med) || 0),
-      inc: acc.inc + (Number(curr.inc) || 0),
-      oth: acc.oth + (Number(curr.oth) || 0),
-      lop: acc.lop + (Number(curr.lop) || 0),
-      adv: acc.adv + (Number(curr.adv) || 0),
-      pt: acc.pt + (Number(curr.pt) || 0),
-      tds: acc.tds + (Number(curr.tds) || 0),
-      othD: acc.othD + (Number(curr.othD) || 0),
-      note: curr.note ? (acc.note ? acc.note + " | " + curr.note : curr.note) : acc.note
-  }), {basic:0,hra:0,conv:0,med:0,inc:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""});
-
-  const incs = sal.inc;
+  const sal = entries.find(r => r.t === "s") || {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""};
+  const incs = entries.filter(r => r.t === "i").reduce((s,r)=>s+(r.inc||0), 0);
   const a = att || {}; 
   const wd = getWD(mo, fy); 
   const present = a.present !== undefined && a.present !== null ? a.present : "-";
   const leave = a.leave !== undefined && a.leave !== null ? a.leave : "-";
   const bal = a.bal !== undefined && a.bal !== null ? a.bal : "-";
-  const g = gr(sal), d = dd(sal), n = g - d; 
-  const ctc = emp.basic ? emp.basic * 12 : 0;
+  const g = gr(sal) + incs, d = dd(sal), n = g - d; const ctc = emp.basic ? emp.basic * 12 : 0;
   const displayYear = ["Jan","Feb","Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
   
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payslip - ${emp.name}</title><style>body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7f6;padding:30px;color:#333;margin:0}.box{max-width:800px;margin:auto;background:#fff;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,.05);border-radius:8px;border-top:5px solid #185FA5}.hdr{display:flex;justify-content:space-between;border-bottom:2px solid #eee;padding-bottom:20px;margin-bottom:25px}.h-l h1{margin:0 0 5px 0;color:#1a1a2e;font-size:24px}.h-l p{margin:0;font-size:12px;color:#666}.h-r{text-align:right}.h-r h2{margin:0 0 5px 0;color:#185FA5;font-size:20px;letter-spacing:1px}.h-r p{margin:0;font-size:14px;font-weight:600;color:#444}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;background:#f8fafc;padding:20px;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:25px;font-size:12px}.row{display:flex;margin-bottom:6px}.lbl{width:135px;font-weight:600;color:#555}.val{font-weight:600;color:#111}table{width:100%;border-collapse:collapse;margin-bottom:25px;font-size:12px}th{background:#1a1a2e;color:#fff;text-align:left;padding:10px;font-weight:500;border:1px solid #1a1a2e}td{padding:10px;border:1px solid #e2e8f0;color:#333}.tr{text-align:right}.fw{font-weight:600}.tot td{font-weight:700;background:#f8fafc;font-size:13px;border-top:2px solid #cbd5e1}.net{background:#e8f5e9;border-left:5px solid #1D9E75;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;margin-bottom:30px}.n-t{font-size:14px;font-weight:700;color:#1D9E75;margin:0;text-transform:uppercase}.n-a{font-size:22px;font-weight:800;color:#111;margin:0}.sig{display:flex;justify-content:space-between;margin-top:50px}.s-l{font-size:12px;font-weight:600;color:#444;border-top:1px solid #ccc;padding-top:10px;width:180px;text-align:center}.ftr{text-align:center;margin-top:30px;font-size:10px;color:#888;border-top:1px solid #eee;padding-top:15px}.btn{display:block;width:200px;margin:0 auto 20px;padding:12px;text-align:center;background:#185FA5;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600}@media print{body{background:#fff;padding:0}.box{box-shadow:none;border:none;padding:0}.btn{display:none}}</style></head><body><button class="btn" onclick="window.print()">Print Payslip</button><div class="box"><div class="hdr"><div class="h-l"><h1>${CO}</h1><p>${AD}</p></div><div class="h-r"><h2>PAYSLIP</h2><p>${mo.toUpperCase()} ${displayYear}</p></div></div><div class="grid"><div><div class="row"><div class="lbl">Employee Name</div><div class="val">: ${emp.name}</div></div><div class="row"><div class="lbl">Employee ID</div><div class="val">: ${emp.id}</div></div><div class="row"><div class="lbl">Designation</div><div class="val">: ${emp.desig||"-"}</div></div><div class="row"><div class="lbl">Date of Joining</div><div class="val">: ${fmtDate(emp.start)}</div></div><div class="row"><div class="lbl">PAN</div><div class="val">: ${emp.pan||"-"}</div></div><div class="row"><div class="lbl">Bank A/C</div><div class="val">: ${emp.bank||"-"}</div></div></div><div><div class="row"><div class="lbl">Total Working Days</div><div class="val">: ${wd}</div></div><div class="row"><div class="lbl">Days Worked</div><div class="val">: ${present}</div></div><div class="row"><div class="lbl">Leave Availed</div><div class="val">: ${leave}</div></div><div class="row"><div class="lbl">Leave Balance</div><div class="val">: ${bal}</div></div></div></div><table><thead><tr><th style="width:35%">EARNINGS</th><th class="tr" style="width:15%">AMOUNT</th><th style="width:35%">DEDUCTIONS</th><th class="tr" style="width:15%">AMOUNT</th></tr></thead><tbody><tr><td>Basic Salary</td><td class="tr fw">${f$(sal.basic)}</td><td>Profession Tax</td><td class="tr fw">${f$(sal.pt)}</td></tr><tr><td>House Rent Allowance</td><td class="tr fw">${f$(sal.hra)}</td><td>Tax Deducted at Source (TDS)</td><td class="tr fw">${f$(sal.tds)}</td></tr><tr><td>Conveyance</td><td class="tr fw">${f$(sal.conv)}</td><td>Staff Advance</td><td class="tr fw">${f$(sal.adv)}</td></tr><tr><td>Medical Allowance</td><td class="tr fw">${f$(sal.med)}</td><td>Loss of Pay (LOP)</td><td class="tr fw">${f$(sal.lop)}</td></tr><tr><td>Incentives</td><td class="tr fw">${f$(incs)}</td><td>Other Deductions</td><td class="tr fw">${f$(sal.othD)}</td></tr><tr><td>Arrears & Others</td><td class="tr fw">${f$(sal.oth)}</td><td></td><td class="tr fw"></td></tr><tr class="tot"><td>Gross Earnings</td><td class="tr">${f$(g)}</td><td>Total Deductions</td><td class="tr">${f$(d)}</td></tr></tbody></table><div class="net"><div class="n-t">Net Pay<br><span style="font-size:10px;color:#555;text-transform:none;font-weight:normal">(Gross Earnings - Total Deductions)</span></div><div class="n-a">₹ ${f$(n)}</div></div>${sal.note?`<div style="font-size:12px;color:#444;background:#fff8e1;padding:10px 15px;border-left:3px solid #ffc107;border-radius:4px;margin-bottom:20px"><b>Note:</b> ${sal.note}</div>`:""}<div class="sig"><div class="s-l">Employer Signature</div><div class="s-l">Employee Signature</div></div><div class="ftr">This is a computer-generated document. No physical signature is required.</div></div></body></html>`;
 };
-
-// --- DATA SEEDING SETUP ---
-const E0 = [{id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""}];
-const P0 = { SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"}]} };
 
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
@@ -103,54 +82,6 @@ export default function App() {
       const { data: empData, error } = await supabase.from('gits_employees').select('*');
       if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
 
-      // --- MIGRATION SAFEGUARD ---
-      try {
-         let didMigrate = false;
-         if (empData && empData.length === 0) {
-             const empInserts = E0.map(e => ({
-                id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
-                phone: e.phone, email: e.email, pwd: e.pwd, start_date: e.start, end_date: e.end,
-                status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink, sec_q: null, sec_a: null
-             }));
-             await supabase.from('gits_employees').insert(empInserts);
-             didMigrate = true;
-         }
-         const { data: ledCheck } = await supabase.from('gits_ledger').select('id').limit(1);
-         if (ledCheck && ledCheck.length === 0) {
-             const ledgerInserts = [];
-             Object.keys(P0).forEach(eid => {
-                Object.keys(P0[eid]).forEach(fyear => {
-                   P0[eid][fyear].forEach(r => {
-                      ledgerInserts.push({ emp_id: eid, fy: fyear, mo: r.m, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othd: r.othD||0, note: r.note||"" });
-                   });
-                });
-             });
-             if(ledgerInserts.length) await supabase.from('gits_ledger').insert(ledgerInserts);
-             didMigrate = true;
-         }
-         const { data: attCheck } = await supabase.from('gits_attendance').select('id').limit(1);
-         if (attCheck && attCheck.length === 0) {
-             const localAtt = initA(E0);
-             const attInserts = [];
-             Object.keys(localAtt).forEach(eid => {
-                Object.keys(localAtt[eid]).forEach(month => {
-                   const a = localAtt[eid][month];
-                   attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, holiday: a.holiday, comments: a.comments });
-                });
-             });
-             if(attInserts.length) await supabase.from('gits_attendance').insert(attInserts);
-             didMigrate = true;
-         }
-
-         if (didMigrate) {
-             window.location.reload();
-             return;
-         }
-      } catch (err) {
-         console.error("Migration Error:", err);
-      }
-
-      // --- STANDARD CLOUD DATA LOAD ---
       const formattedEmps = empData.map(e => ({
           id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
           phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
@@ -206,7 +137,7 @@ export default function App() {
   const [showBulk, setShowBulk] = useState(false);
   const [bulkData, setBulkData] = useState({});
   const [showOffCycle, setShowOffCycle] = useState(false);
-  const [offCycleData, setOffCycleData] = useState({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""});
+  const [offCycleData, setOffCycleData] = useState({empId:"", basic:0, hra:0, conv:0, med:0, inc:0, oth:0, lop:0, adv:0, pt:0, tds:0, othD:0, note:""});
 
   // --- AUTH & PROFILE STATES ---
   const idR = useRef(""), pwR = useRef("");
@@ -410,7 +341,7 @@ export default function App() {
     const entry = { m: mo, t: "s", basic: +offCycleData.basic, hra: +offCycleData.hra, conv: +offCycleData.conv, med: +offCycleData.med, inc: +offCycleData.inc, oth: +offCycleData.oth, lop: +offCycleData.lop, adv: +offCycleData.adv, pt: +offCycleData.pt, tds: +offCycleData.tds, othD: +offCycleData.othD, note: offCycleData.note || "Off-Cycle" };
     const { data } = await supabase.from('gits_ledger').insert({ emp_id: offCycleData.empId, fy: fy, mo: mo, t: "s", basic: entry.basic, hra: entry.hra, conv: entry.conv, med: entry.med, inc: entry.inc, oth: entry.oth, lop: entry.lop, adv: entry.adv, pt: entry.pt, tds: entry.tds, othd: entry.othD, note: entry.note }).select();
     setPay(prev => ({ ...prev, [offCycleData.empId]: { ...prev[offCycleData.empId], [fy]: [...(prev[offCycleData.empId]?.[fy]||[]), { ...entry, db_id: data[0].id }] } }));
-    setShowOffCycle(false); setOffCycleData({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""});
+    setShowOffCycle(false); setOffCycleData({empId:"", basic:0, hra:0, conv:0, med:0, inc:0, oth:0, lop:0, adv:0, pt:0, tds:0, othD:0, note:""});
     alert(`Off-Cycle Payroll saved for ${emps.find(e=>e.id===offCycleData.empId)?.name}`);
   };
 
@@ -422,13 +353,39 @@ export default function App() {
     exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
   };
 
-  const updAtt = async (eid, m, field, val) => { 
-    const newVal = val === "" ? null : Number(val);
-    setAtt(p => ({...p, [eid]: {...p[eid], [m]: {...(p[eid]?.[m]||{}), [field]: newVal}}})); 
-    const currentAtt = att[eid]?.[m] || {};
-    const dbPayload = { emp_id: eid, fy: fy, mo: m, present: currentAtt.present, leave: currentAtt.leave, bal: currentAtt.bal, lop: currentAtt.lop, holiday: currentAtt.holiday, comments: currentAtt.comments };
-    dbPayload[field] = newVal;
-    await supabase.from('gits_attendance').upsert(dbPayload);
+  // 🟢 NEW: LOCAL STATE UPDATE ONLY 🟢
+  const updAtt = (eid, m, field, val) => { 
+    let newVal = val;
+    if (field !== "comments") newVal = val === "" ? null : Number(val);
+    setAtt(p => ({...p, [eid]: {...(p[eid]||{}), [m]: {...(p[eid]?.[m]||{}), [field]: newVal}}})); 
+  };
+
+  // 🟢 NEW: EXPLICIT BATCH SAVE TO CLOUD 🟢
+  const saveAttendance = async () => {
+      try {
+          // 1. Delete existing records for this month/year to prevent duplicates
+          const { error: delErr } = await supabase.from('gits_attendance').delete().eq('fy', fy).eq('mo', mo);
+          if (delErr) throw delErr;
+
+          // 2. Prepare fresh inserts
+          const inserts = [];
+          emps.filter(e => e.id !== "admin").forEach(e => {
+              const a = att[e.id]?.[mo];
+              if (a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || a.comments)) {
+                  inserts.push({ emp_id: e.id, fy: fy, mo: mo, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, holiday: a.holiday, comments: a.comments });
+              }
+          });
+
+          // 3. Insert cleanly
+          if (inserts.length > 0) {
+              const { error: insErr } = await supabase.from('gits_attendance').insert(inserts);
+              if (insErr) throw insErr;
+          }
+          alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Cloud!`);
+      } catch (err) {
+          console.error("Save error:", err);
+          alert("Error saving attendance: " + err.message);
+      }
   };
 
   if (SUPABASE_URL === "PASTE_YOUR_URL_HERE") return <div style={{padding:50,textAlign:"center",fontFamily:"sans-serif",color:"red"}}><h3>Stop!</h3><p>You must paste your Supabase Project URL and API Key at the very top of <b>App.tsx</b> on lines 8 and 9 before the app will load!</p></div>;
@@ -623,8 +580,8 @@ export default function App() {
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:15}}>
                 <div><label style={lbl}>Employee</label><select style={sInp} value={offCycleData.empId} onChange={e=>{
                   const id = e.target.value;
-                  if(id) setOffCycleData({...offCycleData, empId:id, ...getLastPay(id)});
-                  else setOffCycleData({...offCycleData, empId:""});
+                  if(id) setOffCycleData({empId:id, basic:0, hra:0, conv:0, med:0, inc:0, oth:0, lop:0, adv:0, pt:0, tds:0, othD:0, note:"Off-Cycle Arrears/Adj"});
+                  else setOffCycleData({empId:"", basic:0, hra:0, conv:0, med:0, inc:0, oth:0, lop:0, adv:0, pt:0, tds:0, othD:0, note:""});
                 }}><option value="">Select...</option>{emps.filter(e=>e.status==="Active" && e.id!=="admin").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
                 {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Oth Earn","oth"],["LOP","lop"],["Advance","adv"],["PT","pt"],["TDS","tds"],["Oth Ded","othD"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={offCycleData[k]} onChange={e=>setOffCycleData({...offCycleData,[k]:e.target.value})}/></div>))}
                 <div style={{gridColumn:"1/-1"}}><label style={lbl}>Note / Reason</label><input style={sInp} value={offCycleData.note} placeholder="e.g. Arrears" onChange={e=>setOffCycleData({...offCycleData,note:e.target.value})}/></div>
@@ -764,7 +721,11 @@ export default function App() {
       {/* --- ATTENDANCE TAB --- */}
       {tab==="attendance" && (
         <div>
-          <div style={{display:"flex",gap:10,marginBottom:20}}><select value={mo} onChange={e=>setMo(e.target.value)} style={sInp}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
+          <div style={{display:"flex",gap:10,marginBottom:20,alignItems:"center"}}>
+             <select value={mo} onChange={e=>setMo(e.target.value)} style={{...sInp, width: 150}}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select>
+             {ses.role === "a" && <button style={{...btn, background:"#1a1a2e", color:"#fff", margin:0}} onClick={saveAttendance}>Save Attendance</button>}
+          </div>
+
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
               <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
@@ -787,21 +748,11 @@ export default function App() {
           
           {ses.role==="a" && (
             <>
+              {/* LEAVE REGISTER */}
               <div style={{display:"flex",justifyContent:"space-between",marginTop:30,marginBottom:15,alignItems:"center"}}>
                 <h3 style={{margin:0}}>Leave Register ({fyL(fy)})</h3>
-                <button style={{...btn,background:"#1D9E75",color:"#fff",border:"none"}} onClick={()=>{
-                  const rows = [["S.No","Emp ID","Employee","Month","Work Days","Present","Holidays","Leave","Balance","LOP","Comments"]];
-                  let sno = 1;
-                  emps.filter(e=>e.id!=="admin").forEach(e=>MS.forEach(m=>{
-                    const a=att[e.id]?.[m]; 
-                    if(a && (a.present!==null || a.leave!==null || a.holiday!==null || a.lop!==null || a.comments)) {
-                      rows.push([sno++,e.id,e.name,mL(m, fy),getWD(m,fy),a.present||0,a.holiday||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);
-                    }
-                  }));
-                  exportCSV(rows, `Leave_Register_${fyL(fy)}.csv`);
-                }}>Download Excel</button>
               </div>
-              <div style={{...card, padding:0, overflowX:"auto"}}>
+              <div style={{...card, padding:0, overflowX:"auto", marginBottom:40}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                   <thead><tr style={{background:"#1a1a2e",color:"#fff",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th>{MS.map(m=><th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
                   <tbody>
@@ -811,6 +762,46 @@ export default function App() {
                         <td style={{...tdS,color:"#666"}}>{e.id}</td>
                         <td style={tdS}><b>{e.name}</b></td>
                         {MS.map(m=><td key={m} style={tdS}>{(att[e.id]?.[m]?.leave>0) ? `${att[e.id]?.[m]?.leave} L` : "-"}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ATTENDANCE LEDGER */}
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:15,alignItems:"center"}}>
+                <h3 style={{margin:0}}>Attendance Ledger</h3>
+                <button style={{...btn,background:"#1D9E75",color:"#fff",border:"none", margin:0}} onClick={()=>{
+                  const rows = [["S.No","Emp ID","Employee","Month","Work Days","Present","Holidays","Leave","Balance","LOP","Comments"]];
+                  let sno = 1;
+                  emps.filter(e=>e.id!=="admin").forEach(e=>MS.forEach(m=>{
+                    const a=att[e.id]?.[m]; 
+                    if(a && (a.present!==null || a.leave!==null || a.holiday!==null || a.lop!==null || a.comments)) {
+                      rows.push([sno++,e.id,e.name,mL(m, fy),getWD(m,fy),a.present!==null?a.present:"-",a.holiday!==null?a.holiday:"-",a.leave!==null?a.leave:"-",a.bal!==null?a.bal:"-",a.lop!==null?a.lop:"-",a.comments||""]);
+                    }
+                  }));
+                  exportCSV(rows, `Attendance_Ledger_${fyL(fy)}.csv`);
+                }}>Download Excel</button>
+              </div>
+              <div style={{...card, padding:0, overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                  <thead><tr style={{background:"#f4f6f8",textAlign:"left",whiteSpace:"nowrap"}}>
+                    <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Work Days</th><th style={thS}>Present</th><th style={thS}>Holidays</th><th style={thS}>Leave</th><th style={thS}>Balance</th><th style={thS}>LOP</th><th style={thS}>Comments</th>
+                  </tr></thead>
+                  <tbody>
+                    {emps.filter(e=>e.id!=="admin").flatMap(e=>MS.map(m=>({e, m, a:att[e.id]?.[m]}))).filter(x=>x.a && (x.a.present!==null || x.a.leave!==null || x.a.holiday!==null || x.a.lop!==null || x.a.comments)).map((item, idx)=>(
+                      <tr key={item.e.id+item.m} style={{borderBottom:"1px solid #eee"}}>
+                        <td style={{...tdS,color:"#666"}}>{idx + 1}</td>
+                        <td style={{...tdS,color:"#666"}}>{item.e.id}</td>
+                        <td style={tdS}><b>{item.e.name}</b></td>
+                        <td style={tdS}>{mL(item.m, fy)}</td>
+                        <td style={{...tdS, color:"#185FA5", fontWeight:"bold"}}>{getWD(item.m, fy)}</td>
+                        <td style={tdS}>{item.a.present!==null?item.a.present:"-"}</td>
+                        <td style={tdS}>{item.a.holiday!==null?item.a.holiday:"-"}</td>
+                        <td style={tdS}>{item.a.leave!==null?item.a.leave:"-"}</td>
+                        <td style={tdS}>{item.a.bal!==null?item.a.bal:"-"}</td>
+                        <td style={tdS}>{item.a.lop!==null?item.a.lop:"-"}</td>
+                        <td style={{...tdS,fontSize:11,color:"#666"}}>{item.a.comments||"-"}</td>
                       </tr>
                     ))}
                   </tbody>
