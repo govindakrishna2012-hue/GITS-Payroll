@@ -16,7 +16,8 @@ const MS = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","M
 const SEC_QS = ["What city were you born in?", "What is your mother's maiden name?", "What was the name of your first pet?", "What high school did you attend?"];
 
 const fyL = y => `${parseInt(y||0)}-${String(parseInt(y||0)+1).slice(-2)}`;
-const mL  = (m, y) => `${m}-${String(["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1).slice(-2)}`;
+// 👇 FIX: Upgraded formatting to output 4-digit years (e.g., Mar-2026) to prevent Excel from confusing years with days.
+const mL  = (m, y) => `${m}-${["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1}`;
 const f$  = n => Math.round(n||0).toLocaleString("en-IN");
 const gr  = r => (r.basic||0) + (r.hra||0) + (r.conv||0) + (r.med||0) + (r.inc||0) + (r.oth||0);
 const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0) + (r.othD||0);
