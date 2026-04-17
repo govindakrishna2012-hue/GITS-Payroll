@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 
 // ==========================================
 // 🔴 CLOUD DATABASE CONNECTION (SUPABASE) 🔴
-// Replace these two strings with your actual Supabase URL and Key
 const SUPABASE_URL = "https://vmntpwethpuvptczrfft.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtbnRwd2V0aHB1dnB0Y3pyZmZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzQ3ODUsImV4cCI6MjA5MjAxMDc4NX0.eAtuPwCE2WH5ReV1cXaxah6c4hxdo2pjS8d62nWIKCo";
 // ==========================================
@@ -24,17 +23,17 @@ const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0) + (r.othD||0);
 const np  = r => gr(r) - dd(r);
 const txInc = r => np(r) + (r.pt||0) + (r.tds||0);
 
-// --- DEFAULT SEED DATA (Used only for first-time migration) ---
-const E0 = [
-  {id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/1ar5eR8ujvwnEaGWlCbrHdr7QcKyeZ0Ww?usp=sharing"},
-  {id:"SRR1003",name:"V Sunil Kumar",desig:"Senior Recruiter",pan:"DJCPS8542F",cat:"Onshore",basic:44500,phone:"9000000002",email:"sunil@gatewayit.in",pwd:"SRR1003",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015028 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/1ar5eR8ujvwnEaGWlCbrHdr7QcKyeZ0Ww?usp=sharing"},
-  {id:"ADMN1002",name:"R Govinda Krishnan",desig:"Accounts Manager",pan:"AUPPK3079C",cat:"Onshore",basic:33000,phone:"9000000003",email:"govinda@gatewayit.in",pwd:"ADMN1002",start:"07-10-2013",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/1ar5eR8ujvwnEaGWlCbrHdr7QcKyeZ0Ww?usp=sharing"},
-  {id:"D1001",name:"Nagaraju D",desig:"Driver cum Office Boy",pan:"ANJPD1432D",cat:"Onshore",basic:22000,phone:"9000000004",email:"nagaraju@gatewayit.in",pwd:"D1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015029 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/15mCFlI5c6r0ChRwKUweyRVRhLtoThUEz?usp=sharing"},
-  {id:"ADMN1004",name:"Balamurali Krishna",desig:"Accountant",pan:"CDNPB5192E",cat:"Onshore",basic:25000,phone:"9000000005",email:"balamurali@gatewayit.in",pwd:"ADMN1004",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015030 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/13PU-Gx2Oj_ca00riE2wNeP_dS4kusHRv?usp=sharing"},
-  {id:"RR1026",name:"Maneendra Basa",desig:"Recruiter",pan:"BALPB9607E",cat:"Onshore",basic:30000,phone:"9000000006",email:"maneendra@gatewayit.in",pwd:"RR1026",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015031 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/1y2gs9n9uIc4leEE3UMmuJCJIzZkYTMMf?usp=drive_link"},
-  {id:"BA1001",name:"Bhaskar Akkala",desig:"Senior Software Developer",pan:"AEJPA3495G",cat:"Offshore",basic:200000,phone:"9000000007",email:"bhaskar@gatewayit.in",pwd:"BA1001",start:"01-05-2024",end:"",status:"Active",comments:"",bank:"209610100015032 ANDHRA BANK",driveLink:"https://drive.google.com/drive/folders/1gSw5MYcOybJdA9D6bnTInpTnQHeT13J3?usp=sharing"}
-];
-const P0 = { SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"}]}, SRR1003:{2025:[{m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"}]}, ADMN1002:{2025:[{m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"}]}, D1001:{2025:[{m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""}]}, ADMN1004:{2025:[{m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"}]}, RR1026:{2025:[{m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"}]}, BA1001:{2025:[{m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,othD:0,note:"Salary Rs.1,79,750/-"}]} };
+// --- FULL RESTORED SEED DATA ---
+const E0 = [{id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"SRR1003",name:"V Sunil Kumar",desig:"Senior Recruiter",pan:"DJCPS8542F",cat:"Onshore",basic:44500,phone:"9000000002",email:"sunil@gatewayit.in",pwd:"SRR1003",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015028 ANDHRA BANK",driveLink:""},{id:"ADMN1002",name:"R Govinda Krishnan",desig:"Accounts Manager",pan:"AUPPK3079C",cat:"Onshore",basic:33000,phone:"9000000003",email:"govinda@gatewayit.in",pwd:"ADMN1002",start:"07-10-2013",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"D1001",name:"Nagaraju D",desig:"Driver cum Office Boy",pan:"ANJPD1432D",cat:"Onshore",basic:22000,phone:"9000000004",email:"nagaraju@gatewayit.in",pwd:"D1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015029 ANDHRA BANK",driveLink:""},{id:"ADMN1004",name:"Balamurali Krishna",desig:"Accountant",pan:"CDNPB5192E",cat:"Onshore",basic:25000,phone:"9000000005",email:"balamurali@gatewayit.in",pwd:"ADMN1004",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015030 ANDHRA BANK",driveLink:""},{id:"RR1026",name:"Maneendra Basa",desig:"Recruiter",pan:"BALPB9607E",cat:"Onshore",basic:30000,phone:"9000000006",email:"maneendra@gatewayit.in",pwd:"RR1026",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015031 ANDHRA BANK",driveLink:""},{id:"BA1001",name:"Bhaskar Akkala",desig:"Senior Software Developer",pan:"AEJPA3495G",cat:"Offshore",basic:200000,phone:"9000000007",email:"bhaskar@gatewayit.in",pwd:"BA1001",start:"01-05-2024",end:"",status:"Active",comments:"",bank:"209610100015032 ANDHRA BANK",driveLink:""}];
+const P0 = {
+  SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"May",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:151972,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1 2025"},{m:"Jun",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Jul",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Aug",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:142448,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2 2025"},{m:"Sep",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Oct",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Nov",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:176303,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3 2025"},{m:"Dec",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Jan",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Feb",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:5133,lop:0,adv:0,pt:200,tds:0,note:"Leave encashment Rs.5,133"}]},
+  SRR1003:{2025:[{m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:97120,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"May",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Jun",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:106320,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Jul",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Aug",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Sep",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:111600,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Oct",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Nov",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Dec",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:95520,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},{m:"Jan",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Feb",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"}]},
+  ADMN1002:{2025:[{m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:79891,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"May",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Jun",t:"s",basic:21740,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1100,adv:0,pt:200,tds:0,note:"LOP Rs.1100"},{m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:81791,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Jul",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Aug",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Sep",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:87588,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Oct",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Nov",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Dec",t:"s",basic:21775,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1065,adv:0,pt:200,tds:0,note:"LOP Rs.1065"},{m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:79466,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},{m:"Jan",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Feb",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"}]},
+  D1001:{2025:[{m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},{m:"May",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},{m:"Jun",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},{m:"Jul",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 5972"},{m:"Aug",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 4972"},{m:"Sep",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 3972"},{m:"Oct",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 2972"},{m:"Nov",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 1972"},{m:"Dec",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 972"},{m:"Jan",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:972,pt:200,tds:0,note:"Hlth Ins Bal 0"},{m:"Feb",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""}]},
+  ADMN1004:{2025:[{m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:39946,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"May",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Jun",t:"s",basic:14783,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:1667,adv:0,pt:200,tds:0,note:"2 days LOP Rs.1667"},{m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:40896,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Jul",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Aug",t:"s",basic:15644,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:806,adv:0,pt:200,tds:0,note:"1 day LOP Rs.806"},{m:"Sep",t:"s",basic:15617,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:833,adv:0,pt:200,tds:0,note:"1 day LOP Rs.833"},{m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:43794,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Oct",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Nov",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Dec",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:39733,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},{m:"Jan",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Feb",t:"s",basic:15557,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:893,adv:0,pt:200,tds:0,note:"1 day LOP Rs.893"}]},
+  RR1026:{2025:[{m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"May",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:32057,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Jun",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Jul",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Aug",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:35303,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Sep",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Oct",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Nov",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:45433,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Dec",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Jan",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Feb",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"}]},
+  BA1001:{2025:[{m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,note:"Salary Rs.1,79,750/-"},{m:"Jun",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,note:"Salary Rs.1,79,750/-"},{m:"Jul",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:240000,oth:0,lop:0,adv:0,pt:200,tds:56300,note:"Incentive 240hrs"},{m:"Aug",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 128hrs"},{m:"Sep",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 128hrs"},{m:"Oct",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 120hrs"},{m:"Nov",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 120hrs"},{m:"Dec",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:40000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 40hrs"},{m:"Jan",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:61000,note:"Incentive 120hrs"},{m:"Feb",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:75000,note:"Incentive 120hrs"}]}
+};
 const initA = emps => { const a = {}; emps.forEach(e => { a[e.id] = {}; MS.forEach(m => { a[e.id][m] = {present:DY[m]-2,absent:0,leave:0,bal:0,lop:0,holiday:2,wd:DY[m]-2,comments:""}; }); }); return a; };
 
 const exportCSV = (rows, fn) => {
@@ -50,41 +49,7 @@ const buildSlip = (emp, mo, fyStr, entries, att) => {
   const leave = a.leave || 0; const bal = a.bal || 0; const lopDays = a.lop || 0;
   const g = gr(sal) + incs, d = dd(sal), n = g - d; const ctc = emp.basic ? emp.basic * 12 : 0;
   
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Payslip - ${emp.name}</title><style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f9f9f9; padding: 20px; color: #333; margin: 0; } .payslip-container { max-width: 800px; margin: auto; background: #fff; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 8px; border-top: 6px solid #1a1a2e; } .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; } .header h1 { margin: 0; color: #1a1a2e; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; } .header p { margin: 5px 0 0; font-size: 13px; color: #666; } .title { text-align: center; font-size: 15px; font-weight: bold; margin: 20px 0; color: #444; background: #f4f6f8; padding: 10px; border-radius: 4px; } .emp-details, .salary-details { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; } .emp-details td, .salary-details td, .salary-details th { padding: 10px 12px; border: 1px solid #e0e0e0; } .emp-details td:nth-child(odd) { font-weight: bold; background-color: #fafafa; width: 22%; color: #555; font-size: 12px; } .emp-details td:nth-child(even) { width: 28%; color: #222; font-weight: 500; } .salary-details th { background-color: #1a1a2e; color: #fff; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.5px; } .tr { text-align: right !important; } .fw { font-weight: bold; } .net-pay-row td { background: #e8f5e9 !important; border-top: 2px solid #1D9E75 !important; font-size: 15px; color: #1D9E75; padding: 15px 12px !important; } .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: #444; } .print-btn { display: block; width: 200px; margin: 0 auto 20px; padding: 12px; text-align: center; background: #1D9E75; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } @media print { .print-btn { display: none; } body { background: #fff; padding: 0; } .payslip-container { box-shadow: none; border: none; padding: 0; } }</style></head>
-<body>
-  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-  <div class="payslip-container">
-    <div class="header"><h1>${CO}</h1><p>${AD}</p></div>
-    <div class="title">PAYSLIP FOR THE MONTH OF ${mo.toUpperCase()}-${fyStr.slice(-2)}</div>
-    <table class="emp-details">
-      <tr><td>NAME OF EMPLOYEE</td><td>${emp.name}</td><td>TOTAL WORKING DAYS</td><td>${wd}</td></tr>
-      <tr><td>EMPLOYEE CODE</td><td>${emp.id}</td><td>NO OF DAYS WORKED</td><td>${present}</td></tr>
-      <tr><td>DESIGNATION</td><td>${emp.desig}</td><td>NO OF LEAVES TAKEN</td><td>${leave}</td></tr>
-      <tr><td>CTC PER ANNUM</td><td>${f$(ctc)}</td><td>LEAVE BALANCE</td><td>${bal}</td></tr>
-      <tr><td>DATE OF JOINING</td><td colspan="3">${emp.start||""}</td></tr>
-    </table>
-    <table class="salary-details">
-      <thead><tr><th>PARTICULARS</th><th class="tr">TOTAL AMT</th><th class="tr">NET AMT</th><th>DEDUCTIONS</th><th class="tr">AMOUNT</th></tr></thead>
-      <tbody>
-        <tr><td class="fw">BASIC</td><td class="tr">${f$(sal.basic)}</td><td class="tr">${f$(sal.basic)}</td><td>PROFESSION TAX</td><td class="tr">${f$(sal.pt)}</td></tr>
-        <tr><td class="fw">SPECIAL ALLOWANCE</td><td class="tr">0</td><td class="tr">0</td><td>TDS</td><td class="tr">${f$(sal.tds)}</td></tr>
-        <tr><td class="fw">HRA</td><td class="tr">${f$(sal.hra)}</td><td class="tr">${f$(sal.hra)}</td><td>STAFF ADVANCE</td><td class="tr">${f$(sal.adv)}</td></tr>
-        <tr><td class="fw">CONVEYANCE ALLOWANCE</td><td class="tr">${f$(sal.conv)}</td><td class="tr">${f$(sal.conv)}</td><td>LOP</td><td class="tr">${f$(sal.lop)}</td></tr>
-        <tr><td class="fw">MEDICAL ALLOWANCE</td><td class="tr">${f$(sal.med)}</td><td class="tr">${f$(sal.med)}</td><td>NO OF LEAVES (LOP)</td><td class="tr">${lopDays} DAY/S</td></tr>
-        <tr><td class="fw">INCENTIVES</td><td class="tr">${f$(incs)}</td><td class="tr">${f$(incs)}</td><td>OTHER DEDUCTIONS</td><td class="tr">${f$(sal.othD)}</td></tr>
-        <tr><td class="fw">ARREARS AND OTHERS</td><td class="tr">${f$(sal.oth)}</td><td class="tr">${f$(sal.oth)}</td><td>REASON FOR ADJ</td><td class="tr">0</td></tr>
-        <tr class="fw" style="background:#f4f6f8"><td>GROSS SALARY</td><td class="tr">${f$(g)}</td><td></td><td>TOTAL DEDUCTIONS</td><td class="tr">${f$(d)}</td></tr>
-        <tr class="fw net-pay-row"><td>NET SALARY <span style="font-size:10px;font-weight:normal;color:#555;display:block;margin-top:3px">(Gross - Deductions)</span></td><td class="tr">${f$(n)}</td><td colspan="3"></td></tr>
-        <tr><td class="fw">CREDITED TO BANK A/C</td><td>SAVINGS A/C</td><td colspan="3" class="fw">${emp.bank||""}</td></tr>
-      </tbody>
-    </table>
-    ${sal.note ? `<div style="font-size:12px;color:#555;margin-bottom:15px"><b>Note:</b> ${sal.note}</div>` : ""}
-    <div class="footer"><div>FOR ${CO}<br><br><span style="color:#666;font-size:11px">HR DEPARTMENT</span></div></div>
-  </div>
-</body>
-</html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payslip - ${emp.name}</title><style>body{font-family:sans-serif;background:#f9f9f9;padding:20px;color:#333;margin:0}.payslip-container{max-width:800px;margin:auto;background:#fff;padding:30px;box-shadow:0 4px 15px rgba(0,0,0,0.05);border-radius:8px;border-top:6px solid #1a1a2e}.header{text-align:center;margin-bottom:25px;border-bottom:2px solid #eee;padding-bottom:15px}.header h1{margin:0;color:#1a1a2e;font-size:22px}.header p{margin:5px 0 0;font-size:13px;color:#666}.title{text-align:center;font-size:15px;font-weight:bold;margin:20px 0;background:#f4f6f8;padding:10px;border-radius:4px}table{width:100%;border-collapse:collapse;margin-bottom:25px;font-size:13px}td,th{padding:10px 12px;border:1px solid #e0e0e0}.emp-details td:nth-child(odd){font-weight:bold;background:#fafafa;width:22%;font-size:12px}.salary-details th{background:#1a1a2e;color:#fff;text-align:left;font-size:12px}.tr{text-align:right!important}.fw{font-weight:bold}.net-pay-row td{background:#e8f5e9!important;border-top:2px solid #1D9E75!important;font-size:15px;color:#1D9E75}.print-btn{display:block;width:200px;margin:0 auto 20px;padding:12px;text-align:center;background:#1D9E75;color:#fff;border:none;border-radius:4px;cursor:pointer}@media print{.print-btn{display:none}body{background:#fff;padding:0}.payslip-container{box-shadow:none;border:none;padding:0}}</style></head><body><button class="print-btn" onclick="window.print()">Print Payslip</button><div class="payslip-container"><div class="header"><h1>${CO}</h1><p>${AD}</p></div><div class="title">PAYSLIP FOR ${mo.toUpperCase()}-${fyStr.slice(-2)}</div><table class="emp-details"><tr><td>NAME</td><td>${emp.name}</td><td>TOTAL DAYS</td><td>${wd}</td></tr><tr><td>EMP CODE</td><td>${emp.id}</td><td>DAYS WORKED</td><td>${present}</td></tr><tr><td>DESIGNATION</td><td>${emp.desig}</td><td>LEAVES TAKEN</td><td>${leave}</td></tr><tr><td>CTC P.A.</td><td>${f$(ctc)}</td><td>LEAVE BALANCE</td><td>${bal}</td></tr></table><table class="salary-details"><thead><tr><th>PARTICULARS</th><th class="tr">TOTAL</th><th class="tr">NET</th><th>DEDUCTIONS</th><th class="tr">AMOUNT</th></tr></thead><tbody><tr><td class="fw">BASIC</td><td class="tr">${f$(sal.basic)}</td><td class="tr">${f$(sal.basic)}</td><td>PROFESSION TAX</td><td class="tr">${f$(sal.pt)}</td></tr><tr><td class="fw">HRA</td><td class="tr">${f$(sal.hra)}</td><td class="tr">${f$(sal.hra)}</td><td>TDS</td><td class="tr">${f$(sal.tds)}</td></tr><tr><td class="fw">CONVEYANCE</td><td class="tr">${f$(sal.conv)}</td><td class="tr">${f$(sal.conv)}</td><td>STAFF ADVANCE</td><td class="tr">${f$(sal.adv)}</td></tr><tr><td class="fw">MEDICAL</td><td class="tr">${f$(sal.med)}</td><td class="tr">${f$(sal.med)}</td><td>LOP</td><td class="tr">${f$(sal.lop)}</td></tr><tr><td class="fw">INCENTIVES</td><td class="tr">${f$(incs)}</td><td class="tr">${f$(incs)}</td><td>OTHER DED</td><td class="tr">${f$(sal.othD)}</td></tr><tr><td class="fw">ARREARS/OTH</td><td class="tr">${f$(sal.oth)}</td><td class="tr">${f$(sal.oth)}</td><td></td><td></td></tr><tr class="fw" style="background:#f4f6f8"><td>GROSS SALARY</td><td class="tr">${f$(g)}</td><td></td><td>TOTAL DED</td><td class="tr">${f$(d)}</td></tr><tr class="fw net-pay-row"><td>NET SALARY</td><td class="tr">${f$(n)}</td><td colspan="3"></td></tr><tr><td class="fw">BANK A/C</td><td>SAVINGS</td><td colspan="3" class="fw">${emp.bank||""}</td></tr></tbody></table></div></body></html>`;
 };
 
 export default function App() {
@@ -95,50 +60,60 @@ export default function App() {
 
   useEffect(() => {
     const initDb = async () => {
-      // Fetch DB Employees
       const { data: empData, error } = await supabase.from('gits_employees').select('*');
-      if (error) { console.error("DB Connection Error:", error); alert("Database Connection Failed. Check URL and Key."); return; }
+      if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
 
-      // 🔴 MAGIC MIGRATION SCRIPT 🔴
-      // If Cloud DB is completely empty, upload everything from local browser cache!
-      if (empData && empData.length === 0) {
-         console.log("Empty Cloud DB found. Migrating local data to cloud...");
-         const localEmps = JSON.parse(localStorage.getItem("gits_emps")) || E0;
-         const localPay = JSON.parse(localStorage.getItem("gits_pay")) || P0;
-         const localAtt = JSON.parse(localStorage.getItem("gits_att")) || initA(E0);
+      // 🔴 COMPLETE MIGRATION SCRIPT 🔴
+      try {
+         let didMigrate = false;
 
-         // Upload Employees
-         const empInserts = localEmps.map(e => ({
-            id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
-            phone: e.phone, email: e.email, pwd: e.pwd, start_date: e.start, end_date: e.end,
-            status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink
-         }));
-         await supabase.from('gits_employees').insert(empInserts);
+         // 1. Employees
+         if (empData && empData.length === 0) {
+             const empInserts = E0.map(e => ({
+                id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
+                phone: e.phone, email: e.email, pwd: e.pwd, start_date: e.start, end_date: e.end,
+                status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink
+             }));
+             await supabase.from('gits_employees').insert(empInserts);
+             didMigrate = true;
+         }
 
-         // Upload Ledger
-         const ledgerInserts = [];
-         Object.keys(localPay).forEach(eid => {
-            Object.keys(localPay[eid]).forEach(fyear => {
-               localPay[eid][fyear].forEach(r => {
-                  ledgerInserts.push({ emp_id: eid, fy: fyear, mo: r.m, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othD||0, note: r.note||"" });
-               });
-            });
-         });
-         if(ledgerInserts.length) await supabase.from('gits_ledger').insert(ledgerInserts);
+         // 2. Ledger
+         const { data: ledCheck } = await supabase.from('gits_ledger').select('id').limit(1);
+         if (ledCheck && ledCheck.length === 0) {
+             const ledgerInserts = [];
+             Object.keys(P0).forEach(eid => {
+                Object.keys(P0[eid]).forEach(fyear => {
+                   P0[eid][fyear].forEach(r => {
+                      ledgerInserts.push({ emp_id: eid, fy: fyear, mo: r.m, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othd: r.othD||0, note: r.note||"" });
+                   });
+                });
+             });
+             if(ledgerInserts.length) await supabase.from('gits_ledger').insert(ledgerInserts);
+             didMigrate = true;
+         }
 
-         // Upload Attendance
-         const attInserts = [];
-         Object.keys(localAtt).forEach(eid => {
-            Object.keys(localAtt[eid]).forEach(month => {
-               const a = localAtt[eid][month];
-               attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, comments: a.comments });
-            });
-         });
-         if(attInserts.length) await supabase.from('gits_attendance').insert(attInserts);
-         
-         // Reload page to fetch the newly migrated cloud data!
-         window.location.reload();
-         return;
+         // 3. Attendance
+         const { data: attCheck } = await supabase.from('gits_attendance').select('id').limit(1);
+         if (attCheck && attCheck.length === 0) {
+             const localAtt = initA(E0);
+             const attInserts = [];
+             Object.keys(localAtt).forEach(eid => {
+                Object.keys(localAtt[eid]).forEach(month => {
+                   const a = localAtt[eid][month];
+                   attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, comments: a.comments });
+                });
+             });
+             if(attInserts.length) await supabase.from('gits_attendance').insert(attInserts);
+             didMigrate = true;
+         }
+
+         if (didMigrate) {
+             window.location.reload();
+             return;
+         }
+      } catch (err) {
+         console.error("Migration Error:", err);
       }
 
       // --- STANDARD CLOUD DATA LOAD ---
@@ -154,7 +129,7 @@ export default function App() {
           ledData.forEach(r => {
               if(!formattedPay[r.emp_id]) formattedPay[r.emp_id] = {};
               if(!formattedPay[r.emp_id][r.fy]) formattedPay[r.emp_id][r.fy] = [];
-              formattedPay[r.emp_id][r.fy].push({ db_id: r.id, m: r.mo, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othD, note: r.note });
+              formattedPay[r.emp_id][r.fy].push({ db_id: r.id, m: r.mo, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othd, note: r.note });
           });
       }
 
@@ -216,50 +191,40 @@ export default function App() {
   const addEmployee = async () => {
     if(!nE.id || !nE.name) return alert("ID and Name are required");
     const newEmp = {...nE, basic: Number(nE.basic)};
-    
-    // DB Push
     await supabase.from('gits_employees').insert({
         id: newEmp.id, name: newEmp.name, desig: newEmp.desig, pan: newEmp.pan, cat: newEmp.cat, basic: newEmp.basic,
         phone: newEmp.phone, email: newEmp.email, pwd: newEmp.pwd, start_date: newEmp.start, end_date: newEmp.end,
         status: newEmp.status, comments: newEmp.comments, bank: newEmp.bank, drive_link: newEmp.driveLink
     });
-
-    // UI Update
     setEmps([...emps, newEmp]); setPay({...pay, [nE.id]: {}}); setAtt({...att, [nE.id]: {} });
     setShowAddEmp(false); setNE({id:"",name:"",desig:"",pan:"",cat:"Onshore",basic:"",phone:"",email:"",pwd:"",start:"",end:"",status:"Active",bank:"",comments:"",driveLink:""});
   };
 
   const saveEditEmployee = async () => {
     const combinedComments = editData.reason ? editData.reason : editData.comments;
-    // DB Update
     await supabase.from('gits_employees').update({
         phone: editData.phone, email: editData.email, start_date: editData.start, end_date: editData.end,
         status: editData.status, comments: combinedComments, bank: editData.bank, drive_link: editData.driveLink
     }).eq('id', editEmp);
-
-    // UI Update
-    setEmps(p=>p.map(x=>x.id===editEmp?{...x,...editData,comments:combinedComments}:x));
-    setEditEmp(null);
+    setEmps(p=>p.map(x=>x.id===editEmp?{...x,...editData,comments:combinedComments}:x)); setEditEmp(null);
   };
 
   const delEmployee = async (id) => {
     if(confirm("Are you sure you want to delete this employee?")) {
-      await supabase.from('gits_employees').delete().eq('id', id);
-      setEmps(p=>p.filter(x=>x.id!==id));
+      await supabase.from('gits_employees').delete().eq('id', id); setEmps(p=>p.filter(x=>x.id!==id));
     }
   };
 
   const addLedgerEntry = async () => {
     if(!pEmp) return alert("Select Employee First");
     const e = {...nEn, basic:+nEn.basic, hra:+nEn.hra, conv:+nEn.conv, med:+nEn.med, inc:+nEn.inc, oth:+nEn.oth, lop:+nEn.lop, adv:+nEn.adv, pt:+nEn.pt, tds:+nEn.tds, othD:+nEn.othD};
-    
     if (editLedger) {
-      await supabase.from('gits_ledger').update({ mo: e.m, t: e.t, basic: e.basic, hra: e.hra, conv: e.conv, med: e.med, inc: e.inc, oth: e.oth, lop: e.lop, adv: e.adv, pt: e.pt, tds: e.tds, othD: e.othD, note: e.note }).eq('id', editLedger.db_id);
+      await supabase.from('gits_ledger').update({ mo: e.m, t: e.t, basic: e.basic, hra: e.hra, conv: e.conv, med: e.med, inc: e.inc, oth: e.oth, lop: e.lop, adv: e.adv, pt: e.pt, tds: e.tds, othd: e.othD, note: e.note }).eq('id', editLedger.db_id);
       const updatedArr = [...(pay[pEmp]?.[fy] || [])];
       updatedArr[editLedger.idx] = { ...e, db_id: editLedger.db_id };
       setPay({...pay, [pEmp]: {...pay[pEmp], [fy]: updatedArr}});
     } else {
-      const { data } = await supabase.from('gits_ledger').insert({ emp_id: pEmp, fy: fy, mo: e.m, t: e.t, basic: e.basic, hra: e.hra, conv: e.conv, med: e.med, inc: e.inc, oth: e.oth, lop: e.lop, adv: e.adv, pt: e.pt, tds: e.tds, othD: e.othD, note: e.note }).select();
+      const { data } = await supabase.from('gits_ledger').insert({ emp_id: pEmp, fy: fy, mo: e.m, t: e.t, basic: e.basic, hra: e.hra, conv: e.conv, med: e.med, inc: e.inc, oth: e.oth, lop: e.lop, adv: e.adv, pt: e.pt, tds: e.tds, othd: e.othD, note: e.note }).select();
       if(data) setPay({...pay, [pEmp]: {...pay[pEmp], [fy]: [...(pay[pEmp]?.[fy]||[]), { ...e, db_id: data[0].id }]}});
     }
     setShowAddEntry(false); setEditLedger(null);
@@ -289,7 +254,7 @@ export default function App() {
       const d = bulkData[eid]; const existing = nextPay[eid]?.[fy]||[];
       if(!existing.find(r=>r.m===mo && r.t==="s")) {
         const entry = { m:mo, t:"s", basic:+d.basic, hra:+d.hra, conv:+d.conv, med:+d.med, inc:+d.inc, oth:+d.oth, lop:+d.lop, adv:+d.adv, pt:+d.pt, tds:+d.tds, othD:+d.othD, note:d.note||"" };
-        dbInserts.push({ emp_id: eid, fy: fy, mo: mo, t: "s", basic: entry.basic, hra: entry.hra, conv: entry.conv, med: entry.med, inc: entry.inc, oth: entry.oth, lop: entry.lop, adv: entry.adv, pt: entry.pt, tds: entry.tds, othD: entry.othD, note: entry.note });
+        dbInserts.push({ emp_id: eid, fy: fy, mo: mo, t: "s", basic: entry.basic, hra: entry.hra, conv: entry.conv, med: entry.med, inc: entry.inc, oth: entry.oth, lop: entry.lop, adv: entry.adv, pt: entry.pt, tds: entry.tds, othd: entry.othD, note: entry.note });
       }
     });
     if(dbInserts.length) {
@@ -297,7 +262,7 @@ export default function App() {
       data.forEach(r => {
           if(!nextPay[r.emp_id]) nextPay[r.emp_id] = {};
           if(!nextPay[r.emp_id][r.fy]) nextPay[r.emp_id][r.fy] = [];
-          nextPay[r.emp_id][r.fy].push({ db_id: r.id, m: r.mo, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othD, note: r.note });
+          nextPay[r.emp_id][r.fy].push({ db_id: r.id, m: r.mo, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othd, note: r.note });
       });
     }
     setPay(nextPay); setShowBulk(false); alert(`Bulk Payroll processed for ${mL(mo, fy)}`);
@@ -306,9 +271,7 @@ export default function App() {
   const saveOffCycle = async () => {
     if(!offCycleData.empId) return alert("Select an employee");
     const entry = { m: mo, t: "s", basic: +offCycleData.basic, hra: +offCycleData.hra, conv: +offCycleData.conv, med: +offCycleData.med, inc: +offCycleData.inc, oth: +offCycleData.oth, lop: +offCycleData.lop, adv: +offCycleData.adv, pt: +offCycleData.pt, tds: +offCycleData.tds, othD: +offCycleData.othD, note: offCycleData.note || "Off-Cycle" };
-    
-    const { data } = await supabase.from('gits_ledger').insert({ emp_id: offCycleData.empId, fy: fy, mo: mo, t: "s", basic: entry.basic, hra: entry.hra, conv: entry.conv, med: entry.med, inc: entry.inc, oth: entry.oth, lop: entry.lop, adv: entry.adv, pt: entry.pt, tds: entry.tds, othD: entry.othD, note: entry.note }).select();
-    
+    const { data } = await supabase.from('gits_ledger').insert({ emp_id: offCycleData.empId, fy: fy, mo: mo, t: "s", basic: entry.basic, hra: entry.hra, conv: entry.conv, med: entry.med, inc: entry.inc, oth: entry.oth, lop: entry.lop, adv: entry.adv, pt: entry.pt, tds: entry.tds, othd: entry.othD, note: entry.note }).select();
     setPay(prev => ({ ...prev, [offCycleData.empId]: { ...prev[offCycleData.empId], [fy]: [...(prev[offCycleData.empId]?.[fy]||[]), { ...entry, db_id: data[0].id }] } }));
     setShowOffCycle(false); setOffCycleData({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""});
     alert(`Off-Cycle Payroll saved for ${emps.find(e=>e.id===offCycleData.empId)?.name}`);
@@ -323,11 +286,8 @@ export default function App() {
   };
 
   const updAtt = async (eid, m, field, val) => { 
-    // Update local UI instantly
     const newVal = val === "" ? null : Number(val);
     setAtt(p => ({...p, [eid]: {...p[eid], [m]: {...(p[eid]?.[m]||{}), [field]: newVal}}})); 
-    
-    // Update Cloud DB silently in background
     const currentAtt = att[eid]?.[m] || {};
     const dbPayload = { emp_id: eid, fy: "2025", mo: m, present: currentAtt.present, leave: currentAtt.leave, bal: currentAtt.bal, lop: currentAtt.lop, comments: currentAtt.comments };
     dbPayload[field] = newVal;
@@ -407,16 +367,14 @@ export default function App() {
                   </tr></thead>
                   <tbody>{Object.keys(bulkData).map((eid, idx) => {
                     const d = bulkData[eid]; const upd = (k,v) => setBulkData({...bulkData, [eid]:{...d, [k]:v}});
-                    const bInp = {padding:"6px",border:"1px solid #ddd",borderRadius:4,width:70,fontSize:12};
+                    const bInp = {padding:"6px",border:"1px solid #ddd",borderRadius:4,minWidth:80,fontSize:12};
                     
                     const g = (+d.basic||0)+(+d.hra||0)+(+d.conv||0)+(+d.med||0)+(+d.inc||0)+(+d.oth||0);
                     const ded = (+d.lop||0)+(+d.adv||0)+(+d.pt||0)+(+d.tds||0)+(+d.othD||0);
-                    const n = g - ded;
-                    const taxIncVal = n + (+d.pt||0) + (+d.tds||0);
+                    const n = g - ded; const taxIncVal = n + (+d.pt||0) + (+d.tds||0);
 
                     return (<tr key={eid} style={{borderBottom:"1px solid #eee"}}>
-                      <td style={{padding:8, color:"#666"}}>{idx + 1}</td>
-                      <td style={{padding:8, color:"#666"}}>{eid}</td>
+                      <td style={{padding:8, color:"#666"}}>{idx + 1}</td><td style={{padding:8, color:"#666"}}>{eid}</td>
                       <td style={{whiteSpace:"nowrap",paddingRight:10}}>{emps.find(e=>e.id===eid)?.name}</td>
                       <td><input style={bInp} type="number" value={d.basic} onChange={e=>upd("basic",e.target.value)}/></td>
                       <td><input style={bInp} type="number" value={d.hra} onChange={e=>upd("hra",e.target.value)}/></td>
@@ -429,7 +387,7 @@ export default function App() {
                       <td><input style={bInp} type="number" value={d.pt} onChange={e=>upd("pt",e.target.value)}/></td>
                       <td><input style={bInp} type="number" value={d.tds} onChange={e=>upd("tds",e.target.value)}/></td>
                       <td><input style={bInp} type="number" value={d.othD} onChange={e=>upd("othD",e.target.value)}/></td>
-                      <td><input style={{...bInp, width: 100}} type="text" placeholder="Optional" value={d.note||""} onChange={e=>upd("note",e.target.value)}/></td>
+                      <td><input style={{...bInp, minWidth: 120}} type="text" placeholder="Optional" value={d.note||""} onChange={e=>upd("note",e.target.value)}/></td>
                       <td style={{fontWeight:"bold",paddingLeft:10}}>{f$(taxIncVal)}</td>
                       <td style={{fontWeight:"bold",color:"#1D9E75",paddingLeft:10}}>{f$(n)}</td>
                     </tr>)
@@ -543,7 +501,7 @@ export default function App() {
               <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th>Present</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
               <tbody>{emps.filter(e => ses.role==="a" ? e.status==="Active" : e.id===ses.id).map((e, idx)=>{
                 const a = att[e.id]?.[mo]||{}; 
-                return (<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{e.id}</td><td style={tdS}>{e.name}</td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.present!==undefined?a.present:""} onChange={x=>updAtt(e.id, mo, "present", x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.leave!==undefined?a.leave:""} onChange={x=>updAtt(e.id, mo, "leave", x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.bal!==undefined?a.bal:""} onChange={x=>updAtt(e.id, mo, "bal", x.target.value)}/></td><td><input style={{...sInp,width:60}} disabled={ses.role!=="a"} type="number" value={a.lop!==undefined?a.lop:""} onChange={x=>updAtt(e.id, mo, "lop", x.target.value)}/></td><td><input style={sInp} disabled={ses.role!=="a"} value={a.comments||""} onChange={x=>updAtt(e.id, mo, "comments", x.target.value)}/></td></tr>)
+                return (<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{e.id}</td><td style={tdS}>{e.name}</td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.present!==undefined?a.present:""} onChange={x=>updAtt(e.id, mo, "present", x.target.value)}/></td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.leave!==undefined?a.leave:""} onChange={x=>updAtt(e.id, mo, "leave", x.target.value)}/></td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.bal!==undefined?a.bal:""} onChange={x=>updAtt(e.id, mo, "bal", x.target.value)}/></td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.lop!==undefined?a.lop:""} onChange={x=>updAtt(e.id, mo, "lop", x.target.value)}/></td><td><input style={{...sInp, minWidth:120}} disabled={ses.role!=="a"} value={a.comments||""} onChange={x=>updAtt(e.id, mo, "comments", x.target.value)}/></td></tr>)
               })}</tbody>
             </table>
           </div>
