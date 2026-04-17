@@ -71,6 +71,7 @@ export default function App() {
       const { data: empData, error } = await supabase.from('gits_employees').select('*');
       if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
 
+      // --- STANDARD CLOUD DATA LOAD ---
       const formattedEmps = empData.map(e => ({
           id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
           phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
@@ -251,7 +252,18 @@ export default function App() {
     if (editData.adminForcePwd) payload.pwd = editData.adminForcePwd;
 
     await supabase.from('gits_employees').update(payload).eq('id', editEmp);
-    setEmps(p=>p.map(x=>x.id===editEmp?{...x,...payload,comments:combinedComments}:x)); 
+    setEmps(p=>p.map(x=>x.id===editEmp?{
+        ...x,
+        phone: editData.phone,
+        email: editData.email,
+        start: editData.start,
+        end: editData.end,
+        status: editData.status,
+        comments: combinedComments,
+        bank: editData.bank,
+        driveLink: editData.driveLink,
+        ...(editData.adminForcePwd ? { pwd: editData.adminForcePwd } : {})
+    }:x)); 
     setEditEmp(null);
   };
 
@@ -335,7 +347,7 @@ export default function App() {
     const newVal = val === "" ? null : Number(val);
     setAtt(p => ({...p, [eid]: {...p[eid], [m]: {...(p[eid]?.[m]||{}), [field]: newVal}}})); 
     const currentAtt = att[eid]?.[m] || {};
-    const dbPayload = { emp_id: eid, fy: fy, mo: m, present: currentAtt.present, leave: currentAtt.leave, bal: currentAtt.bal, lop: currentAtt.lop, holiday: currentAtt.holiday, comments: currentAtt.comments };
+    const dbPayload = { emp_id: eid, fy: "2025", mo: m, present: currentAtt.present, leave: currentAtt.leave, bal: currentAtt.bal, lop: currentAtt.lop, holiday: currentAtt.holiday, comments: currentAtt.comments };
     dbPayload[field] = newVal;
     await supabase.from('gits_attendance').upsert(dbPayload);
   };
@@ -565,9 +577,9 @@ export default function App() {
         <div>
           <div style={{marginBottom:15,display:"flex",justifyContent:"flex-end",gap:10}}>
             <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
-              const rows = [["S.No","Emp ID","Name","Designation","Email","Phone","PAN","Category","Basic Salary","Bank Details","Start Date","End Date","Status","Comments","Drive Link"]];
+              const rows = [["S.No","Emp ID","Name","Designation","Email","Phone","Start Date","End Date","Status","PAN","Category","Basic Salary","Bank Details","Comments","Drive Link"]];
               let sno = 1;
-              emps.filter(e=>e.id!=="admin").forEach(e => rows.push([sno++,e.id,e.name,e.desig,e.email,e.phone,e.pan,e.cat,e.basic,e.bank,e.start,e.end,e.status,e.comments||"",e.driveLink||""]));
+              emps.filter(e=>e.id!=="admin").forEach(e => rows.push([sno++,e.id,e.name,e.desig,e.email,e.phone,e.start||"",e.end||"",e.status,e.pan,e.cat,e.basic,e.bank,e.comments||"",e.driveLink||""]));
               exportCSV(rows, `Employees_${fyL(fy)}.csv`);
             }}>Download Excel</button>
             <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>setShowAddEmp(!showAddEmp)}>+ Add Employee</button>
@@ -627,6 +639,9 @@ export default function App() {
                   <th style={thS}>Employee Name</th>
                   <th style={thS}>Email ID</th>
                   <th style={thS}>Phone Number</th>
+                  <th style={thS}>Start Date</th>
+                  <th style={thS}>End Date</th>
+                  <th style={thS}>Status</th>
                   <th style={thS}>Bank Account</th>
                   <th style={thS}>Drive Link</th>
                   <th style={thS}>Action</th>
@@ -638,8 +653,19 @@ export default function App() {
                     <td style={{...tdS,color:"#666"}}>{idx + 1}</td>
                     <td style={tdS}>{e.id}</td>
                     <td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td>
-                    <td style={tdS}>{e.email}</td>
-                    <td style={tdS}>{e.phone}</td>
+                    <td style={tdS}>{e.email || "-"}</td>
+                    <td style={tdS}>{e.phone || "-"}</td>
+                    <td style={tdS}>{e.start || "-"}</td>
+                    <td style={tdS}>{e.end || "-"}</td>
+                    <td style={tdS}>
+                        <span style={{
+                            padding:"3px 8px", borderRadius:12, fontSize:11, fontWeight:"bold",
+                            background: e.status === "Active" ? "#e8f5e9" : (e.status === "Resigned" ? "#fff8e1" : "#ffebee"),
+                            color: e.status === "Active" ? "#1D9E75" : (e.status === "Resigned" ? "#d32f2f" : "#b71c1c")
+                        }}>
+                            {e.status || "Unknown"}
+                        </span>
+                    </td>
                     <td style={tdS}>{e.bank || "-"}</td>
                     <td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer" style={{color:"#185FA5"}}>Link</a> : "-"}</td>
                     <td style={tdS}>
