@@ -13,7 +13,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const CO = "GATEWAY IT SOLUTIONS";
 const AD = "FLAT NO.201, KARRE COTTAGE, VI PHASE, KPHB COLONY, HYDERABAD-500072.";
 const MS = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
-const DY = {Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31,Jan:31,Feb:28,Mar:31};
+const SEC_QS = ["What city were you born in?", "What is your mother's maiden name?", "What was the name of your first pet?", "What high school did you attend?"];
 
 const fyL = y => `${parseInt(y||0)}-${String(parseInt(y||0)+1).slice(-2)}`;
 const mL  = (m, y) => `${m}-${String(["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].includes(m) ? parseInt(y||0) : parseInt(y||0)+1).slice(-2)}`;
@@ -23,18 +23,23 @@ const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0) + (r.othD||0);
 const np  = r => gr(r) - dd(r);
 const txInc = r => np(r) + (r.pt||0) + (r.tds||0);
 
-// --- FULL RESTORED SEED DATA ---
-const E0 = [{id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"SRR1003",name:"V Sunil Kumar",desig:"Senior Recruiter",pan:"DJCPS8542F",cat:"Onshore",basic:44500,phone:"9000000002",email:"sunil@gatewayit.in",pwd:"SRR1003",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015028 ANDHRA BANK",driveLink:""},{id:"ADMN1002",name:"R Govinda Krishnan",desig:"Accounts Manager",pan:"AUPPK3079C",cat:"Onshore",basic:33000,phone:"9000000003",email:"govinda@gatewayit.in",pwd:"ADMN1002",start:"07-10-2013",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"D1001",name:"Nagaraju D",desig:"Driver cum Office Boy",pan:"ANJPD1432D",cat:"Onshore",basic:22000,phone:"9000000004",email:"nagaraju@gatewayit.in",pwd:"D1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015029 ANDHRA BANK",driveLink:""},{id:"ADMN1004",name:"Balamurali Krishna",desig:"Accountant",pan:"CDNPB5192E",cat:"Onshore",basic:25000,phone:"9000000005",email:"balamurali@gatewayit.in",pwd:"ADMN1004",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015030 ANDHRA BANK",driveLink:""},{id:"RR1026",name:"Maneendra Basa",desig:"Recruiter",pan:"BALPB9607E",cat:"Onshore",basic:30000,phone:"9000000006",email:"maneendra@gatewayit.in",pwd:"RR1026",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015031 ANDHRA BANK",driveLink:""},{id:"BA1001",name:"Bhaskar Akkala",desig:"Senior Software Developer",pan:"AEJPA3495G",cat:"Offshore",basic:200000,phone:"9000000007",email:"bhaskar@gatewayit.in",pwd:"BA1001",start:"01-05-2024",end:"",status:"Active",comments:"",bank:"209610100015032 ANDHRA BANK",driveLink:""}];
-const P0 = {
-  SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"May",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:151972,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1 2025"},{m:"Jun",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Jul",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Aug",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:142448,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2 2025"},{m:"Sep",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Oct",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Nov",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:176303,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3 2025"},{m:"Dec",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Jan",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.38,300/-"},{m:"Feb",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:5133,lop:0,adv:0,pt:200,tds:0,note:"Leave encashment Rs.5,133"}]},
-  SRR1003:{2025:[{m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:97120,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"May",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Jun",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:106320,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Jul",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Aug",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Sep",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:111600,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Oct",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Nov",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Dec",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:95520,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},{m:"Jan",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"},{m:"Feb",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.44,300/-"}]},
-  ADMN1002:{2025:[{m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:79891,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"May",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Jun",t:"s",basic:21740,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1100,adv:0,pt:200,tds:0,note:"LOP Rs.1100"},{m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:81791,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Jul",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Aug",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Sep",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:87588,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Oct",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Nov",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Dec",t:"s",basic:21775,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:1065,adv:0,pt:200,tds:0,note:"LOP Rs.1065"},{m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:79466,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},{m:"Jan",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"},{m:"Feb",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.32,800/-"}]},
-  D1001:{2025:[{m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},{m:"May",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},{m:"Jun",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""},{m:"Jul",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 5972"},{m:"Aug",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 4972"},{m:"Sep",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 3972"},{m:"Oct",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 2972"},{m:"Nov",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 1972"},{m:"Dec",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:1000,pt:200,tds:0,note:"Hlth Ins Bal 972"},{m:"Jan",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:972,pt:200,tds:0,note:"Hlth Ins Bal 0"},{m:"Feb",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:""}]},
-  ADMN1004:{2025:[{m:"Apr",t:"i",basic:0,hra:0,conv:0,med:0,inc:39946,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"May",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Jun",t:"s",basic:14783,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:1667,adv:0,pt:200,tds:0,note:"2 days LOP Rs.1667"},{m:"Jul",t:"i",basic:0,hra:0,conv:0,med:0,inc:40896,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Jul",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Aug",t:"s",basic:15644,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:806,adv:0,pt:200,tds:0,note:"1 day LOP Rs.806"},{m:"Sep",t:"s",basic:15617,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:833,adv:0,pt:200,tds:0,note:"1 day LOP Rs.833"},{m:"Oct",t:"i",basic:0,hra:0,conv:0,med:0,inc:43794,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Oct",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Nov",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Dec",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Jan",t:"i",basic:0,hra:0,conv:0,med:0,inc:39733,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q4"},{m:"Jan",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.24,800/-"},{m:"Feb",t:"s",basic:15557,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:893,adv:0,pt:200,tds:0,note:"1 day LOP Rs.893"}]},
-  RR1026:{2025:[{m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"May",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"May",t:"i",basic:0,hra:0,conv:0,med:0,inc:32057,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q1"},{m:"Jun",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Jul",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Aug",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Aug",t:"i",basic:0,hra:0,conv:0,med:0,inc:35303,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q2"},{m:"Sep",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Oct",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Nov",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Nov",t:"i",basic:0,hra:0,conv:0,med:0,inc:45433,oth:0,lop:0,adv:0,pt:0,tds:0,note:"Incentive Q3"},{m:"Dec",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Jan",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"},{m:"Feb",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,note:"Salary Rs.39,800/-"}]},
-  BA1001:{2025:[{m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,note:"Salary Rs.1,79,750/-"},{m:"Jun",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,note:"Salary Rs.1,79,750/-"},{m:"Jul",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:240000,oth:0,lop:0,adv:0,pt:200,tds:56300,note:"Incentive 240hrs"},{m:"Aug",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 128hrs"},{m:"Sep",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:128000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 128hrs"},{m:"Oct",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 120hrs"},{m:"Nov",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 120hrs"},{m:"Dec",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:40000,oth:0,lop:0,adv:0,pt:200,tds:52650,note:"Incentive 40hrs"},{m:"Jan",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:61000,note:"Incentive 120hrs"},{m:"Feb",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:120000,oth:0,lop:0,adv:0,pt:200,tds:75000,note:"Incentive 120hrs"}]}
+const getWD = (mStr, yStr) => {
+  if (!yStr) return 0;
+  const y = ["Jan","Feb","Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
+  const mIdx = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(mStr);
+  const daysInMonth = new Date(y, mIdx + 1, 0).getDate();
+  let count = 0;
+  for(let d = 1; d <= daysInMonth; d++) {
+    const dayOfWeek = new Date(y, mIdx, d).getDay();
+    if(dayOfWeek !== 0 && dayOfWeek !== 6) count++; 
+  }
+  return count;
 };
-const initA = emps => { const a = {}; emps.forEach(e => { a[e.id] = {}; MS.forEach(m => { a[e.id][m] = {present:DY[m]-2,absent:0,leave:0,bal:0,lop:0,holiday:2,wd:DY[m]-2,comments:""}; }); }); return a; };
+
+// --- COMPRESSED SEED DATA ---
+const E0 = [{id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"SRR1003",name:"V Sunil Kumar",desig:"Senior Recruiter",pan:"DJCPS8542F",cat:"Onshore",basic:44500,phone:"9000000002",email:"sunil@gatewayit.in",pwd:"SRR1003",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015028 ANDHRA BANK",driveLink:""},{id:"ADMN1002",name:"R Govinda Krishnan",desig:"Accounts Manager",pan:"AUPPK3079C",cat:"Onshore",basic:33000,phone:"9000000003",email:"govinda@gatewayit.in",pwd:"ADMN1002",start:"07-10-2013",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"D1001",name:"Nagaraju D",desig:"Driver cum Office Boy",pan:"ANJPD1432D",cat:"Onshore",basic:22000,phone:"9000000004",email:"nagaraju@gatewayit.in",pwd:"D1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015029 ANDHRA BANK",driveLink:""},{id:"ADMN1004",name:"Balamurali Krishna",desig:"Accountant",pan:"CDNPB5192E",cat:"Onshore",basic:25000,phone:"9000000005",email:"balamurali@gatewayit.in",pwd:"ADMN1004",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015030 ANDHRA BANK",driveLink:""},{id:"RR1026",name:"Maneendra Basa",desig:"Recruiter",pan:"BALPB9607E",cat:"Onshore",basic:30000,phone:"9000000006",email:"maneendra@gatewayit.in",pwd:"RR1026",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015031 ANDHRA BANK",driveLink:""},{id:"BA1001",name:"Bhaskar Akkala",desig:"Senior Software Developer",pan:"AEJPA3495G",cat:"Offshore",basic:200000,phone:"9000000007",email:"bhaskar@gatewayit.in",pwd:"BA1001",start:"01-05-2024",end:"",status:"Active",comments:"",bank:"209610100015032 ANDHRA BANK",driveLink:""}];
+const P0 = { SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"}]}, SRR1003:{2025:[{m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"}]}, ADMN1002:{2025:[{m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"}]}, D1001:{2025:[{m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""}]}, ADMN1004:{2025:[{m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"}]}, RR1026:{2025:[{m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"}]}, BA1001:{2025:[{m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,othD:0,note:"Salary Rs.1,79,750/-"}]} };
+const initA = emps => { const a = {}; emps.forEach(e => { a[e.id] = {}; MS.forEach(m => { a[e.id][m] = {present:null, leave:null, bal:null, lop:null, holiday:null, comments:""}; }); }); return a; };
 
 const exportCSV = (rows, fn) => {
   const csv = "\uFEFF" + rows.map(r => r.map(c => `"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
@@ -42,10 +47,12 @@ const exportCSV = (rows, fn) => {
   a.download = fn; document.body.appendChild(a); a.click(); setTimeout(() => document.body.removeChild(a), 100);
 };
 
-const buildSlip = (emp, mo, fyStr, entries, att) => {
+const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
   const sal = entries.find(r => r.t === "s") || {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""};
   const incs = entries.filter(r => r.t === "i").reduce((s,r)=>s+(r.inc||0), 0);
-  const a = att || {}; const wd = a.wd !== undefined ? a.wd : DY[mo]; const present = a.present !== undefined ? a.present : "-";
+  const a = att || {}; 
+  const wd = getWD(mo, fy); 
+  const present = a.present !== undefined && a.present !== null ? a.present : "-";
   const leave = a.leave || 0; const bal = a.bal || 0; const lopDays = a.lop || 0;
   const g = gr(sal) + incs, d = dd(sal), n = g - d; const ctc = emp.basic ? emp.basic * 12 : 0;
   
@@ -63,22 +70,17 @@ export default function App() {
       const { data: empData, error } = await supabase.from('gits_employees').select('*');
       if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
 
-      // 🔴 COMPLETE MIGRATION SCRIPT 🔴
       try {
          let didMigrate = false;
-
-         // 1. Employees
          if (empData && empData.length === 0) {
              const empInserts = E0.map(e => ({
                 id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
                 phone: e.phone, email: e.email, pwd: e.pwd, start_date: e.start, end_date: e.end,
-                status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink
+                status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink, sec_q: null, sec_a: null
              }));
              await supabase.from('gits_employees').insert(empInserts);
              didMigrate = true;
          }
-
-         // 2. Ledger
          const { data: ledCheck } = await supabase.from('gits_ledger').select('id').limit(1);
          if (ledCheck && ledCheck.length === 0) {
              const ledgerInserts = [];
@@ -92,8 +94,6 @@ export default function App() {
              if(ledgerInserts.length) await supabase.from('gits_ledger').insert(ledgerInserts);
              didMigrate = true;
          }
-
-         // 3. Attendance
          const { data: attCheck } = await supabase.from('gits_attendance').select('id').limit(1);
          if (attCheck && attCheck.length === 0) {
              const localAtt = initA(E0);
@@ -101,7 +101,7 @@ export default function App() {
              Object.keys(localAtt).forEach(eid => {
                 Object.keys(localAtt[eid]).forEach(month => {
                    const a = localAtt[eid][month];
-                   attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, comments: a.comments });
+                   attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, holiday: a.holiday, comments: a.comments });
                 });
              });
              if(attInserts.length) await supabase.from('gits_attendance').insert(attInserts);
@@ -120,7 +120,7 @@ export default function App() {
       const formattedEmps = empData.map(e => ({
           id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
           phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
-          status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link
+          status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link, sec_q: e.sec_q, sec_a: e.sec_a
       }));
 
       const { data: ledData } = await supabase.from('gits_ledger').select('*');
@@ -138,7 +138,7 @@ export default function App() {
       if(attData) {
           attData.forEach(r => {
               if(!formattedAtt[r.emp_id]) formattedAtt[r.emp_id] = {};
-              formattedAtt[r.emp_id][r.mo] = { present: r.present, leave: r.leave, bal: r.bal, lop: r.lop, comments: r.comments };
+              formattedAtt[r.emp_id][r.mo] = { present: r.present, leave: r.leave, bal: r.bal, lop: r.lop, holiday: r.holiday, comments: r.comments };
           });
       }
 
@@ -172,8 +172,22 @@ export default function App() {
   const [showOffCycle, setShowOffCycle] = useState(false);
   const [offCycleData, setOffCycleData] = useState({empId:"", basic:0, hra:0, conv:800, med:1500, inc:0, oth:0, lop:0, adv:0, pt:200, tds:0, othD:0, note:""});
 
+  // --- AUTH & PROFILE STATES ---
   const idR = useRef(""), pwR = useRef("");
-  const myE = ses?.role === "e" ? emps.find(e=>e.id===ses.id) : null;
+  
+  const [forgotStep, setForgotStep] = useState(0); // 0=Enter ID, 1=Answer Q, 2=New Pwd
+  const [forgotId, setForgotId] = useState("");
+  const [forgotUser, setForgotUser] = useState(null);
+  const [secAnsInput, setSecAnsInput] = useState("");
+  const [newForgotPwd, setNewForgotPwd] = useState("");
+  
+  const [curPwd, setCurPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confPwd, setConfPwd] = useState("");
+  const [secQ, setSecQ] = useState("");
+  const [secA, setSecA] = useState("");
+
+  const myE = ses?.role === "e" ? emps.find(e=>e.id===ses.id) : (ses?.role === "a" ? emps.find(e=>e.id==="admin") : null);
 
   const dTot = useMemo(() => {
     let g=0,d=0,n=0; 
@@ -184,8 +198,87 @@ export default function App() {
 
   const login = () => {
     const id = idR.current.trim(), pw = pwR.current.trim();
-    if(id==="admin" && pw==="admin123") { setSes({role:"a"}); setTab("dashboard"); }
-    else { const e = emps.find(x => x.id===id && x.pwd===pw); if(e) { setSes({role:"e", id:e.id}); setLEmp(e.id); setPEmp(e.id); setTab("dashboard"); } else alert("Invalid Credentials"); }
+    const dbAdmin = emps.find(x => x.id === "admin");
+    if(id === "admin" && (dbAdmin ? pw === dbAdmin.pwd : pw === "admin123")) { 
+        setSes({role:"a", id:"admin"}); 
+        setTab("dashboard"); 
+    }
+    else { 
+        const e = emps.find(x => x.id===id && x.pwd===pw); 
+        if(e) { setSes({role:"e", id:e.id}); setLEmp(e.id); setPEmp(e.id); setTab("dashboard"); } 
+        else alert("Invalid Credentials"); 
+    }
+  };
+
+  // --- FORGOT PASSWORD LOGIC ---
+  const handleForgotNext = async () => {
+      if (forgotStep === 0) {
+          const e = emps.find(x => x.id === forgotId.trim() || x.email === forgotId.trim());
+          if (!e) return alert("User not found.");
+          if (!e.sec_q || !e.sec_a) return alert("You have not set up a security question. Please contact your Admin to reset your password.");
+          setForgotUser(e);
+          setForgotStep(1);
+      } else if (forgotStep === 1) {
+          if (secAnsInput.toLowerCase().trim() !== forgotUser.sec_a.toLowerCase().trim()) return alert("Incorrect answer.");
+          setForgotStep(2);
+      } else if (forgotStep === 2) {
+          if (!newForgotPwd) return alert("Enter a new password");
+          await supabase.from('gits_employees').update({ pwd: newForgotPwd }).eq('id', forgotUser.id);
+          setEmps(p=>p.map(x=>x.id===forgotUser.id ? {...x, pwd:newForgotPwd} : x));
+          alert("Password reset successfully! You can now log in.");
+          setForgotStep(0); setForgotId(""); setForgotUser(null); setSecAnsInput(""); setNewForgotPwd("");
+      }
+  };
+
+  // --- PROFILE UPDATE LOGIC ---
+  const handleUpdateProfile = async () => {
+      const userId = ses.id;
+      let pwdToSave = undefined;
+      
+      // Handle Password Change Attempt
+      if (curPwd || newPwd || confPwd) {
+          if(!curPwd || !newPwd || !confPwd) return alert("To change password, fill all password fields.");
+          if(newPwd !== confPwd) return alert("New passwords do not match.");
+          
+          if (ses.role === "a") {
+              const dbAdmin = emps.find(x => x.id === "admin");
+              if (!dbAdmin && curPwd !== "admin123") return alert("Incorrect current password.");
+              if (dbAdmin && curPwd !== dbAdmin.pwd) return alert("Incorrect current password.");
+          } else {
+              if (curPwd !== myE.pwd) return alert("Incorrect current password.");
+          }
+          pwdToSave = newPwd;
+      }
+      
+      // Update Admin Record
+      if (ses.role === "a") {
+          const dbAdmin = emps.find(x => x.id === "admin");
+          const payload = {};
+          if (pwdToSave) payload.pwd = pwdToSave;
+          if (secQ) payload.sec_q = secQ;
+          if (secA) payload.sec_a = secA;
+
+          if (!dbAdmin) {
+              await supabase.from('gits_employees').insert({ id: "admin", name: "System Admin", status: "Active", ...payload });
+              setEmps([...emps, { id: "admin", name: "System Admin", status: "Active", ...payload }]);
+          } else {
+              await supabase.from('gits_employees').update(payload).eq('id', 'admin');
+              setEmps(p=>p.map(x=>x.id==="admin" ? {...x, ...payload} : x));
+          }
+      } 
+      // Update Employee Record
+      else {
+          const payload = {};
+          if (pwdToSave) payload.pwd = pwdToSave;
+          if (secQ) payload.sec_q = secQ;
+          if (secA) payload.sec_a = secA;
+          
+          await supabase.from('gits_employees').update(payload).eq('id', userId);
+          setEmps(p=>p.map(x=>x.id===userId ? {...x, ...payload} : x));
+      }
+      
+      alert("Profile updated successfully!");
+      setCurPwd(""); setNewPwd(""); setConfPwd("");
   };
 
   const addEmployee = async () => {
@@ -202,11 +295,19 @@ export default function App() {
 
   const saveEditEmployee = async () => {
     const combinedComments = editData.reason ? editData.reason : editData.comments;
-    await supabase.from('gits_employees').update({
+    const payload = {
         phone: editData.phone, email: editData.email, start_date: editData.start, end_date: editData.end,
         status: editData.status, comments: combinedComments, bank: editData.bank, drive_link: editData.driveLink
-    }).eq('id', editEmp);
-    setEmps(p=>p.map(x=>x.id===editEmp?{...x,...editData,comments:combinedComments}:x)); setEditEmp(null);
+    };
+    
+    // ADMIN OVERRIDE PASSWORD
+    if (editData.adminForcePwd) {
+        payload.pwd = editData.adminForcePwd;
+    }
+
+    await supabase.from('gits_employees').update(payload).eq('id', editEmp);
+    setEmps(p=>p.map(x=>x.id===editEmp?{...x,...payload,comments:combinedComments}:x)); 
+    setEditEmp(null);
   };
 
   const delEmployee = async (id) => {
@@ -246,7 +347,7 @@ export default function App() {
     return { basic: 0, hra: 0, conv: 800, med: 1500, inc: 0, oth: 0, lop: 0, adv: 0, pt: 200, tds: 0, othD: 0, note: "" };
   };
 
-  const openBulkPayroll = () => { const defaults = {}; emps.filter(e=>e.status==="Active").forEach(emp => { defaults[emp.id] = getLastPay(emp.id); }); setBulkData(defaults); setShowBulk(true); setShowOffCycle(false); };
+  const openBulkPayroll = () => { const defaults = {}; emps.filter(e=>e.status==="Active" && e.id!=="admin").forEach(emp => { defaults[emp.id] = getLastPay(emp.id); }); setBulkData(defaults); setShowBulk(true); setShowOffCycle(false); };
 
   const saveBulkPayroll = async () => {
     const nextPay = {...pay}; const dbInserts = [];
@@ -279,7 +380,7 @@ export default function App() {
 
   const handleExportLedger = () => {
     const head = ["S.No", "Emp ID", "Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Other Earnings", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Other Deductions", "Total Deductions", "Taxable Income", "Net Amount", "Note/Comments"];
-    const rows = [head]; const tEmps = ses?.role==="a" ? (lEmp ? emps.filter(e=>e.id===lEmp) : emps) : [myE];
+    const rows = [head]; const tEmps = ses?.role==="a" ? (lEmp ? emps.filter(e=>e.id===lEmp) : emps.filter(e=>e.id!=="admin")) : [myE];
     let sno = 1;
     tEmps.forEach(e => { if(!e) return; (pay[e.id]?.[fy] || []).filter(r=>!mo||r.m===mo).forEach(r => rows.push([sno++, e.id, e.name, mL(r.m, fy), r.t==="s"?"Salary":"Incentive", r.basic||0, r.hra||0, r.conv||0, r.med||0, r.inc||0, r.oth||0, gr(r), r.lop||0, r.adv||0, r.pt||0, r.tds||0, r.othD||0, dd(r), txInc(r), np(r), r.note||""])); });
     exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
@@ -289,7 +390,7 @@ export default function App() {
     const newVal = val === "" ? null : Number(val);
     setAtt(p => ({...p, [eid]: {...p[eid], [m]: {...(p[eid]?.[m]||{}), [field]: newVal}}})); 
     const currentAtt = att[eid]?.[m] || {};
-    const dbPayload = { emp_id: eid, fy: "2025", mo: m, present: currentAtt.present, leave: currentAtt.leave, bal: currentAtt.bal, lop: currentAtt.lop, comments: currentAtt.comments };
+    const dbPayload = { emp_id: eid, fy: fy, mo: m, present: currentAtt.present, leave: currentAtt.leave, bal: currentAtt.bal, lop: currentAtt.lop, holiday: currentAtt.holiday, comments: currentAtt.comments };
     dbPayload[field] = newVal;
     await supabase.from('gits_attendance').upsert(dbPayload);
   };
@@ -302,14 +403,44 @@ export default function App() {
     <div style={{display:"flex",justifyContent:"center",paddingTop:100,fontFamily:"sans-serif"}}>
       <div style={{width:320,padding:30,border:"1px solid #ddd",borderRadius:12,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
         <h2 style={{textAlign:"center",marginBottom:20}}>{CO}</h2>
-        <input style={sInp} placeholder="Employee ID" onChange={e=>idR.current=e.target.value}/>
-        <input style={{...sInp,marginTop:15,marginBottom:20}} type="password" placeholder="Password" onChange={e=>pwR.current=e.target.value}/>
-        <button style={{width:"100%",padding:12,background:"#1a1a2e",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}} onClick={login}>Login</button>
+        
+        {forgotStep === 0 ? (
+          <>
+              <input style={sInp} placeholder="Employee ID" onChange={e=>idR.current=e.target.value}/>
+              <input style={{...sInp,marginTop:15,marginBottom:5}} type="password" placeholder="Password" onChange={e=>pwR.current=e.target.value}/>
+              <div style={{textAlign:"right", marginBottom:20}}>
+                 <a href="#" style={{fontSize:11, color:"#185FA5", textDecoration:"none"}} onClick={(e)=>{e.preventDefault(); setForgotStep(1);}}>Forgot Password?</a>
+              </div>
+              <button style={{width:"100%",padding:12,background:"#1a1a2e",color:"#fff",border:"none",borderRadius:6,cursor:"pointer"}} onClick={login}>Login</button>
+          </>
+        ) : forgotStep === 1 && !forgotUser ? (
+          <>
+              <h4 style={{marginTop:0, marginBottom:10}}>Password Recovery</h4>
+              <p style={{fontSize:13, color:"#666", marginBottom:15}}>Enter your Employee ID or Email.</p>
+              <input style={{...sInp, marginBottom:20}} placeholder="Employee ID or Email" value={forgotId} onChange={e=>setForgotId(e.target.value)}/>
+              <button style={{width:"100%",padding:12,background:"#185FA5",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",marginBottom:10}} onClick={handleForgotNext}>Continue</button>
+              <button style={{width:"100%",padding:12,background:"#fff",color:"#666",border:"1px solid #ddd",borderRadius:6,cursor:"pointer"}} onClick={()=>{setForgotStep(0); setForgotId("");}}>Cancel</button>
+          </>
+        ) : forgotStep === 1 && forgotUser ? (
+          <>
+              <h4 style={{marginTop:0, marginBottom:10}}>Security Question</h4>
+              <p style={{fontSize:13, color:"#1a1a2e", fontWeight:"bold", marginBottom:15}}>{forgotUser.sec_q}</p>
+              <input style={{...sInp, marginBottom:20}} placeholder="Type your answer" value={secAnsInput} onChange={e=>setSecAnsInput(e.target.value)}/>
+              <button style={{width:"100%",padding:12,background:"#185FA5",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",marginBottom:10}} onClick={handleForgotNext}>Verify Answer</button>
+              <button style={{width:"100%",padding:12,background:"#fff",color:"#666",border:"1px solid #ddd",borderRadius:6,cursor:"pointer"}} onClick={()=>{setForgotStep(0); setForgotUser(null); setSecAnsInput("");}}>Cancel</button>
+          </>
+        ) : (
+          <>
+              <h4 style={{marginTop:0, marginBottom:10}}>Reset Password</h4>
+              <input style={{...sInp, marginBottom:20}} type="password" placeholder="Enter New Password" value={newForgotPwd} onChange={e=>setNewForgotPwd(e.target.value)}/>
+              <button style={{width:"100%",padding:12,background:"#1D9E75",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",marginBottom:10}} onClick={handleForgotNext}>Save & Login</button>
+          </>
+        )}
       </div>
     </div>
   );
 
-  const TABS = ses?.role === "a" ? ["dashboard","employees","attendance","ledger","payslips"] : ["dashboard","attendance","ledger","payslips"];
+  const TABS = ses?.role === "a" ? ["dashboard","employees","attendance","ledger","payslips", "profile"] : ["dashboard","attendance","ledger","payslips", "profile"];
   const ADMIN_DRIVE = "https://drive.google.com/drive/folders/1kq4pVPRpaycQczhgycGz0dGHLUn2LmG6?usp=sharing";
   const DRIVE_LINK = ses.role === "a" ? ADMIN_DRIVE : myE?.driveLink;
 
@@ -325,8 +456,63 @@ export default function App() {
       </div>
 
       <div style={{display:"flex",gap:10,marginBottom:25,borderBottom:"1px solid #eee"}}>
-        {TABS.map(t=>(<button key={t} style={{padding:"10px 15px",background:"none",border:"none",borderBottom:tab===t?"3px solid #1a1a2e":"none",cursor:"pointer",fontWeight:tab===t?"bold":"normal"}} onClick={()=>setTab(t)}>{t.toUpperCase()}</button>))}
+        {TABS.map(t=>(<button key={t} style={{padding:"10px 15px",background:"none",border:"none",borderBottom:tab===t?"3px solid #1a1a2e":"none",cursor:"pointer",fontWeight:tab===t?"bold":"normal"}} onClick={()=>{
+           setTab(t);
+           if(t==="profile" && myE) {
+               setSecQ(myE.sec_q || "");
+               setSecA(myE.sec_a || "");
+           }
+        }}>{t.toUpperCase()}</button>))}
       </div>
+
+      {/* --- PROFILE TAB --- */}
+      {tab==="profile" && (
+        <div style={{...card, maxWidth:600, margin:"auto"}}>
+          <h3 style={{marginTop:0, borderBottom:"1px solid #eee", paddingBottom:10}}>My Profile & Security</h3>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginTop:20}}>
+              <div style={{gridColumn:"1/-1", padding:15, background:"#f4f6f8", borderRadius:6, marginBottom:10}}>
+                  <p style={{margin:0, fontSize:14}}><b>Name:</b> {myE?.name || "System Admin"}</p>
+                  <p style={{margin:"5px 0 0 0", fontSize:14}}><b>ID:</b> {myE?.id || "admin"}</p>
+              </div>
+
+              {/* Password Section */}
+              <div style={{display:"flex", flexDirection:"column", gap:15}}>
+                <h4 style={{margin:0}}>Change Password</h4>
+                <div>
+                   <label style={lbl}>Current Password</label>
+                   <input type="password" style={sInp} value={curPwd} onChange={e=>setCurPwd(e.target.value)} />
+                </div>
+                <div>
+                   <label style={lbl}>New Password</label>
+                   <input type="password" style={sInp} value={newPwd} onChange={e=>setNewPwd(e.target.value)} />
+                </div>
+                <div>
+                   <label style={lbl}>Confirm New Password</label>
+                   <input type="password" style={sInp} value={confPwd} onChange={e=>setConfPwd(e.target.value)} />
+                </div>
+              </div>
+
+              {/* Security Question Section */}
+              <div style={{display:"flex", flexDirection:"column", gap:15}}>
+                <h4 style={{margin:0}}>Recovery Question</h4>
+                <p style={{fontSize:11, color:"#666", margin:0}}>Set this up to reset your password yourself if you forget it.</p>
+                <div>
+                   <label style={lbl}>Security Question</label>
+                   <select style={sInp} value={secQ} onChange={e=>setSecQ(e.target.value)}>
+                       <option value="">Select a question...</option>
+                       {SEC_QS.map(q => <option key={q} value={q}>{q}</option>)}
+                   </select>
+                </div>
+                <div>
+                   <label style={lbl}>Your Answer</label>
+                   <input type="text" style={sInp} value={secA} onChange={e=>setSecA(e.target.value)} placeholder="Answer is not case sensitive" />
+                </div>
+              </div>
+
+              <button style={{gridColumn:"1/-1", padding:"12px", background:"#1a1a2e", color:"#fff", border:"none", borderRadius:4, cursor:"pointer", marginTop:10, fontWeight:"bold"}} onClick={handleUpdateProfile}>Save Security Settings</button>
+          </div>
+        </div>
+      )}
 
       {tab==="dashboard" && (
         <div>
@@ -338,14 +524,14 @@ export default function App() {
               <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
                 const rows = [["S.No","Emp ID","Employee","Role","Basic","HRA","Conv","Med","Inc","Oth Earn","Gross","LOP","Advance","PT","TDS","Oth Ded","Total Deductions","Taxable Income","Net","Note"]];
                 let sno = 1;
-                emps.forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([sno++,e.id,e.name,e.desig,r.basic,r.hra,r.conv,r.med,r.inc,r.oth,gr(r),r.lop,r.adv,r.pt,r.tds,r.othD||0,dd(r),txInc(r),np(r),r.note||""])));
+                emps.filter(e=>e.id!=="admin").forEach(e=>(pay[e.id]?.[fy]||[]).filter(r=>r.m===mo).forEach(r=>rows.push([sno++,e.id,e.name,e.desig,r.basic,r.hra,r.conv,r.med,r.inc,r.oth,gr(r),r.lop,r.adv,r.pt,r.tds,r.othD||0,dd(r),txInc(r),np(r),r.note||""])));
                 exportCSV(rows, `Payroll_${mL(mo, fy)}.csv`);
               }}>Export CSV</button>
             </div>}
           </div>
           
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:20,textAlign:"center",marginBottom:20}}>
-            <div style={card}><div style={lbl}>{ses.role==="a"?"Total Staff":"My Salary"}</div><div style={{fontSize:24,fontWeight:"bold"}}>{ses.role==="a"?emps.length:f$(myE?.basic)}</div></div>
+            <div style={card}><div style={lbl}>{ses.role==="a"?"Total Staff":"My Salary"}</div><div style={{fontSize:24,fontWeight:"bold"}}>{ses.role==="a"?emps.filter(e=>e.id!=="admin").length:f$(myE?.basic)}</div></div>
             <div style={card}><div style={lbl}>{ses.role==="a"?"Gross Month":"My YTD Gross"}</div><div style={{fontSize:24,fontWeight:"bold"}}>{ses.role==="a"?f$(dTot.g):f$((pay[myE?.id]?.[fy]||[]).reduce((s,r)=>s+gr(r),0))}</div></div>
             <div style={card}><div style={lbl}>Deductions</div><div style={{fontSize:24,fontWeight:"bold",color:"#D85A30"}}>{f$(dTot.d)}</div></div>
             <div style={card}><div style={lbl}>Net Amount</div><div style={{fontSize:24,fontWeight:"bold",color:"#1D9E75"}}>{f$(dTot.n)}</div></div>
@@ -405,7 +591,7 @@ export default function App() {
                   const id = e.target.value;
                   if(id) setOffCycleData({...offCycleData, empId:id, ...getLastPay(id)});
                   else setOffCycleData({...offCycleData, empId:""});
-                }}><option value="">Select...</option>{emps.filter(e=>e.status==="Active").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
+                }}><option value="">Select...</option>{emps.filter(e=>e.status==="Active" && e.id!=="admin").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
                 {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Oth Earn","oth"],["LOP","lop"],["Advance","adv"],["PT","pt"],["TDS","tds"],["Oth Ded","othD"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={offCycleData[k]} onChange={e=>setOffCycleData({...offCycleData,[k]:e.target.value})}/></div>))}
                 <div style={{gridColumn:"1/-1"}}><label style={lbl}>Note / Reason</label><input style={sInp} value={offCycleData.note} placeholder="e.g. Arrears" onChange={e=>setOffCycleData({...offCycleData,note:e.target.value})}/></div>
               </div>
@@ -419,11 +605,11 @@ export default function App() {
               <thead><tr style={{background:"#f8f9fa",textAlign:"left",whiteSpace:"nowrap"}}>
                 <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Role</th><th style={thS}>Basic</th><th style={thS}>HRA</th><th style={thS}>Conv</th><th style={thS}>Med</th><th style={thS}>Inc</th><th style={thS}>Oth Earn</th><th style={thS}>Gross</th><th style={thS}>LOP</th><th style={thS}>Adv</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Oth Ded</th><th style={thS}>Tot. Ded</th><th style={thS}>Taxable</th><th style={thS}>Net</th><th style={thS}>Note</th><th style={thS}>Payslip</th>
               </tr></thead>
-              <tbody>{emps.filter(e => ses.role==="a" ? true : e.id===ses.id).map((emp, idx)=>{
+              <tbody>{emps.filter(e => ses.role==="a" ? e.id!=="admin" : e.id===ses.id).map((emp, idx)=>{
                 const rows = (pay[emp.id]?.[fy]||[]).filter(r=>r.m===mo);
                 if(!rows.length) return <tr key={emp.id}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td colSpan={17} style={{...tdS,color:"#888",textAlign:"center"}}>No entry</td></tr>;
                 return rows.map((r,i)=>(<tr key={emp.id+i} style={{borderBottom:"1px solid #eee"}}>
-                  <td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.hra)}</td><td style={tdS}>{f$(r.conv)}</td><td style={tdS}>{f$(r.med)}</td><td style={tdS}>{f$(r.inc)}</td><td style={tdS}>{f$(r.oth)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(gr(r))}</td><td style={tdS}>{f$(r.lop)}</td><td style={tdS}>{f$(r.adv)}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={tdS}>{f$(r.othD||0)}</td><td style={{...tdS,color:"#D85A30"}}>{f$(dd(r))}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(txInc(r))}</td><td style={{...tdS,color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td><td style={{...tdS,fontSize:11,color:"#666"}}>{r.note||"-"}</td><td style={tdS}><button style={{...btn,padding:"4px 8px"}} onClick={()=>setSlip(buildSlip(emp,mo,fyL(fy),rows,att[emp.id]?.[mo]))}>PDF</button></td>
+                  <td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{...tdS,color:"#888"}}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.hra)}</td><td style={tdS}>{f$(r.conv)}</td><td style={tdS}>{f$(r.med)}</td><td style={tdS}>{f$(r.inc)}</td><td style={tdS}>{f$(r.oth)}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(gr(r))}</td><td style={tdS}>{f$(r.lop)}</td><td style={tdS}>{f$(r.adv)}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={tdS}>{f$(r.othD||0)}</td><td style={{...tdS,color:"#D85A30"}}>{f$(dd(r))}</td><td style={{...tdS,fontWeight:"bold"}}>{f$(txInc(r))}</td><td style={{...tdS,color:"#1D9E75",fontWeight:"bold"}}>{f$(np(r))}</td><td style={{...tdS,fontSize:11,color:"#666"}}>{r.note||"-"}</td><td style={tdS}><button style={{...btn,padding:"4px 8px"}} onClick={()=>setSlip(buildSlip(emp,mo,fy,fyL(fy),rows,att[emp.id]?.[mo]))}>PDF</button></td>
                 </tr>));
               })}</tbody>
             </table>
@@ -436,9 +622,9 @@ export default function App() {
         <div>
           <div style={{marginBottom:15,display:"flex",justifyContent:"flex-end",gap:10}}>
             <button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={()=>{
-              const rows = [["S.No","Emp ID","Name","Designation","Email","Phone","PAN","Category","Basic Salary","Bank Details","Start Date","End Date","Status","Comments"]];
+              const rows = [["S.No","Emp ID","Name","Designation","Email","Phone","PAN","Category","Basic Salary","Bank Details","Start Date","End Date","Status","Comments","Drive Link"]];
               let sno = 1;
-              emps.forEach(e => rows.push([sno++,e.id,e.name,e.desig,e.email,e.phone,e.pan,e.cat,e.basic,e.bank,e.start,e.end,e.status,e.comments||""]));
+              emps.filter(e=>e.id!=="admin").forEach(e => rows.push([sno++,e.id,e.name,e.desig,e.email,e.phone,e.pan,e.cat,e.basic,e.bank,e.start,e.end,e.status,e.comments||"",e.driveLink||""]));
               exportCSV(rows, `Employees_${fyL(fy)}.csv`);
             }}>Download Excel</button>
             <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>setShowAddEmp(!showAddEmp)}>+ Add Employee</button>
@@ -473,7 +659,14 @@ export default function App() {
                 <div><label style={lbl}>Start Date</label><input style={sInp} type="date" value={editData.start||""} onChange={e=>setEditData({...editData,start:e.target.value})}/></div>
                 <div><label style={lbl}>End Date</label><input style={sInp} type="date" value={editData.end||""} onChange={e=>setEditData({...editData,end:e.target.value})}/></div>
                 <div><label style={lbl}>Status</label><select style={sInp} value={editData.status||"Active"} onChange={e=>setEditData({...editData,status:e.target.value})}><option>Active</option><option>Resigned</option><option>Terminated</option></select></div>
-                {editData.end && <div style={{gridColumn:"1/-1"}}><label style={lbl}>Reason for leaving</label><input style={sInp} value={editData.reason||""} onChange={e=>setEditData({...editData,reason:e.target.value})}/></div>}
+                {editData.end && <div><label style={lbl}>Reason for leaving</label><input style={sInp} value={editData.reason||""} onChange={e=>setEditData({...editData,reason:e.target.value})}/></div>}
+                
+                {/* ADMIN OVERRIDE SECTION */}
+                <div style={{borderLeft:"3px solid #D85A30", paddingLeft:10}}>
+                   <label style={{...lbl, color:"#D85A30", fontWeight:"bold"}}>Force Reset Password (Admin Only)</label>
+                   <input style={sInp} value={editData.adminForcePwd||""} onChange={e=>setEditData({...editData,adminForcePwd:e.target.value})} placeholder="Type to overwrite user password"/>
+                </div>
+
                 <div style={{gridColumn:"1/-1"}}><label style={lbl}>Comments</label><input style={sInp} value={editData.comments||""} onChange={e=>setEditData({...editData,comments:e.target.value})}/></div>
               </div>
               <div style={{marginTop:15,display:"flex",gap:10}}>
@@ -485,8 +678,37 @@ export default function App() {
 
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Gross Basic</th><th style={thS}>Drive Folder</th><th style={thS}>Status</th><th style={thS}>Comments</th><th style={thS}>Action</th></tr></thead>
-              <tbody>{emps.map((e, idx)=>(<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={tdS}>{e.id}</td><td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td><td style={tdS}>{f$(e.basic)}</td><td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer">Link</a> : "-"}</td><td style={tdS}>{e.status}</td><td style={tdS}>{e.comments||"-"}</td><td style={tdS}><div style={{display:"flex",gap:5}}><button style={{...btn,padding:"4px 8px"}} onClick={()=>{setEditEmp(e.id);setEditData({...e});}}>Edit</button> <button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>delEmployee(e.id)}>Del</button></div></td></tr>))}</tbody>
+              <thead>
+                <tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}>
+                  <th style={thS}>Sl.No</th>
+                  <th style={thS}>Employee ID</th>
+                  <th style={thS}>Employee Name</th>
+                  <th style={thS}>Email ID</th>
+                  <th style={thS}>Phone Number</th>
+                  <th style={thS}>Bank Account</th>
+                  <th style={thS}>Drive Link</th>
+                  <th style={thS}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emps.filter(e=>e.id!=="admin").map((e, idx)=>(
+                  <tr key={e.id} style={{borderBottom:"1px solid #eee"}}>
+                    <td style={{...tdS,color:"#666"}}>{idx + 1}</td>
+                    <td style={tdS}>{e.id}</td>
+                    <td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td>
+                    <td style={tdS}>{e.email}</td>
+                    <td style={tdS}>{e.phone}</td>
+                    <td style={tdS}>{e.bank || "-"}</td>
+                    <td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer" style={{color:"#185FA5"}}>Link</a> : "-"}</td>
+                    <td style={tdS}>
+                      <div style={{display:"flex",gap:5}}>
+                        <button style={{...btn,padding:"4px 8px"}} onClick={()=>{setEditEmp(e.id);setEditData({...e});}}>Edit</button> 
+                        <button style={{...btn,padding:"4px 8px",color:"red"}} onClick={()=>delEmployee(e.id)}>Del</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </div>
@@ -498,10 +720,20 @@ export default function App() {
           <div style={{display:"flex",gap:10,marginBottom:20}}><select value={mo} onChange={e=>setMo(e.target.value)} style={sInp}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
           <div style={{...card, padding:0, overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th>Present</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
-              <tbody>{emps.filter(e => ses.role==="a" ? e.status==="Active" : e.id===ses.id).map((e, idx)=>{
+              <thead><tr style={{background:"#f4f4f4",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
+              <tbody>{emps.filter(e => ses.role==="a" ? (e.status==="Active" && e.id!=="admin") : e.id===ses.id).map((e, idx)=>{
                 const a = att[e.id]?.[mo]||{}; 
-                return (<tr key={e.id} style={{borderBottom:"1px solid #eee"}}><td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{e.id}</td><td style={tdS}>{e.name}</td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.present!==undefined?a.present:""} onChange={x=>updAtt(e.id, mo, "present", x.target.value)}/></td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.leave!==undefined?a.leave:""} onChange={x=>updAtt(e.id, mo, "leave", x.target.value)}/></td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.bal!==undefined?a.bal:""} onChange={x=>updAtt(e.id, mo, "bal", x.target.value)}/></td><td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.lop!==undefined?a.lop:""} onChange={x=>updAtt(e.id, mo, "lop", x.target.value)}/></td><td><input style={{...sInp, minWidth:120}} disabled={ses.role!=="a"} value={a.comments||""} onChange={x=>updAtt(e.id, mo, "comments", x.target.value)}/></td></tr>)
+                const wDays = getWD(mo, fy);
+                return (<tr key={e.id} style={{borderBottom:"1px solid #eee"}}>
+                  <td style={{...tdS,color:"#666"}}>{idx + 1}</td><td style={{...tdS,color:"#666"}}>{e.id}</td><td style={tdS}>{e.name}</td>
+                  <td style={{...tdS, fontWeight:"bold", textAlign:"center", color:"#185FA5"}}>{wDays}</td>
+                  <td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.present!==undefined&&a.present!==null?a.present:""} onChange={x=>updAtt(e.id, mo, "present", x.target.value)}/></td>
+                  <td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.holiday!==undefined&&a.holiday!==null?a.holiday:""} onChange={x=>updAtt(e.id, mo, "holiday", x.target.value)}/></td>
+                  <td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.leave!==undefined&&a.leave!==null?a.leave:""} onChange={x=>updAtt(e.id, mo, "leave", x.target.value)}/></td>
+                  <td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.bal!==undefined&&a.bal!==null?a.bal:""} onChange={x=>updAtt(e.id, mo, "bal", x.target.value)}/></td>
+                  <td><input style={{...sInp,minWidth:60}} disabled={ses.role!=="a"} type="number" value={a.lop!==undefined&&a.lop!==null?a.lop:""} onChange={x=>updAtt(e.id, mo, "lop", x.target.value)}/></td>
+                  <td><input style={{...sInp, minWidth:120}} disabled={ses.role!=="a"} value={a.comments||""} onChange={x=>updAtt(e.id, mo, "comments", x.target.value)}/></td>
+                </tr>)
               })}</tbody>
             </table>
           </div>
@@ -511,9 +743,14 @@ export default function App() {
               <div style={{display:"flex",justifyContent:"space-between",marginTop:30,marginBottom:15,alignItems:"center"}}>
                 <h3 style={{margin:0}}>Leave Register ({fyL(fy)})</h3>
                 <button style={{...btn,background:"#1D9E75",color:"#fff",border:"none"}} onClick={()=>{
-                  const rows = [["S.No","Emp ID","Employee","Month","Present","Leave","Balance","LOP","Comments"]];
+                  const rows = [["S.No","Emp ID","Employee","Month","Work Days","Present","Holidays","Leave","Balance","LOP","Comments"]];
                   let sno = 1;
-                  emps.forEach(e=>MS.forEach(m=>{const a=att[e.id]?.[m]; if(a) rows.push([sno++,e.id,e.name,mL(m, fy),a.present||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);}));
+                  emps.filter(e=>e.id!=="admin").forEach(e=>MS.forEach(m=>{
+                    const a=att[e.id]?.[m]; 
+                    if(a && (a.present!==null || a.leave!==null || a.holiday!==null || a.lop!==null || a.comments)) {
+                      rows.push([sno++,e.id,e.name,mL(m, fy),getWD(m,fy),a.present||0,a.holiday||0,a.leave||0,a.bal||0,a.lop||0,a.comments||""]);
+                    }
+                  }));
                   exportCSV(rows, `Leave_Register_${fyL(fy)}.csv`);
                 }}>Download Excel</button>
               </div>
@@ -521,7 +758,7 @@ export default function App() {
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                   <thead><tr style={{background:"#1a1a2e",color:"#fff",textAlign:"left",whiteSpace:"nowrap"}}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th>{MS.map(m=><th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
                   <tbody>
-                    {emps.map((e, idx)=>(
+                    {emps.filter(e=>e.id!=="admin").map((e, idx)=>(
                       <tr key={e.id} style={{borderBottom:"1px solid #eee"}}>
                         <td style={{...tdS,color:"#666"}}>{idx + 1}</td>
                         <td style={{...tdS,color:"#666"}}>{e.id}</td>
@@ -540,7 +777,7 @@ export default function App() {
       {/* --- LEDGER TAB --- */}
       {tab==="ledger" && (
         <div>
-          <div style={{display:"flex",gap:10,marginBottom:20}}><select style={sInp} value={mo} onChange={e=>setMo(e.target.value)}><option value="">All Months</option>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select>{ses.role==="a" && <select style={sInp} value={lEmp} onChange={e=>setLEmp(e.target.value)}><option value="">All Employees</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>}<div style={{marginLeft:"auto", display:"flex", gap:10}}>{ses.role==="a" && <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>{setEditLedger(null); setNEn({m:"Apr",t:"s",basic:0,hra:0,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""}); setShowAddEntry(true);}}>+ Add Entry</button>}<button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={handleExportLedger}>Download Excel</button></div></div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}><select style={sInp} value={mo} onChange={e=>setMo(e.target.value)}><option value="">All Months</option>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select>{ses.role==="a" && <select style={sInp} value={lEmp} onChange={e=>setLEmp(e.target.value)}><option value="">All Employees</option>{emps.filter(e=>e.id!=="admin").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>}<div style={{marginLeft:"auto", display:"flex", gap:10}}>{ses.role==="a" && <button style={{...btn,background:"#1a1a2e",color:"#fff"}} onClick={()=>{setEditLedger(null); setNEn({m:"Apr",t:"s",basic:0,hra:0,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""}); setShowAddEntry(true);}}>+ Add Entry</button>}<button style={{...btn,background:"#1D9E75",color:"#fff"}} onClick={handleExportLedger}>Download Excel</button></div></div>
           {showAddEntry && ses.role==="a" && (
             <div style={{...card, border:"1px solid #1a1a2e", marginBottom:20}}>
               <h4 style={{marginTop:0}}>{editLedger ? "Edit Ledger Entry" : "Add Manual Ledger Entry"}</h4>
@@ -551,7 +788,7 @@ export default function App() {
                     const l = getLastPay(id);
                     setNEn(prev => ({...prev, basic:l.basic, hra:l.hra, conv:l.conv, med:l.med, pt:l.pt, tds:l.tds}));
                   }
-                }}><option value="">Select...</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
+                }}><option value="">Select...</option>{emps.filter(e=>e.id!=="admin").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
                 <div><label style={lbl}>Month</label><select style={sInp} value={nEn.m} onChange={e=>setNEn({...nEn,m:e.target.value})}>{MS.map(m=><option key={m} value={m}>{mL(m, fy)}</option>)}</select></div>
                 <div><label style={lbl}>Type</label><select style={sInp} value={nEn.t} onChange={e=>setNEn({...nEn,t:e.target.value})}><option value="s">Salary</option><option value="i">Incentive</option></select></div>
                 {[["Basic","basic"],["HRA","hra"],["Conv","conv"],["Med","med"],["Incentive","inc"],["Other Earn","oth"],["LOP","lop"],["Advance","adv"],["PT","pt"],["TDS","tds"],["Other Ded","othD"]].map(([l,k])=>(<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={e=>setNEn({...nEn,[k]:e.target.value})}/></div>))}
@@ -566,7 +803,7 @@ export default function App() {
                 <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Basic</th><th style={thS}>HRA</th><th style={thS}>Conv</th><th style={thS}>Med</th><th style={thS}>Inc</th><th style={thS}>Oth Earn</th><th style={thS}>Gross</th><th style={thS}>LOP</th><th style={thS}>Adv</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Oth Ded</th><th style={thS}>Tot. Ded</th><th style={thS}>Taxable</th><th style={thS}>Net</th><th style={thS}>Note</th>{ses.role==="a" && <th style={thS}>Action</th>}
               </tr></thead>
               <tbody>
-                {emps.filter(e => ses.role==="a" ? (!lEmp||e.id===lEmp) : e.id===ses.id)
+                {emps.filter(e => ses.role==="a" ? (e.id!=="admin" && (!lEmp||e.id===lEmp)) : e.id===ses.id)
                   .flatMap(e=>(pay[e.id]?.[fy]||[]).filter(r=>!mo||r.m===mo).map((r,i)=>({e,r,i})))
                   .map((item, idx) => (
                   <tr key={item.e.id+item.i} style={{borderBottom:"1px solid #eee"}}>
@@ -613,13 +850,13 @@ export default function App() {
         <div style={card}>
           <h3 style={{marginTop:0,marginBottom:20}}>Payslip Generator</h3>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:15,marginBottom:20}}>
-            {ses.role==="a" && <div><label style={lbl}>Select Staff</label><select style={sInp} value={pEmp} onChange={e=>setPEmp(e.target.value)}><option value="">Select...</option>{emps.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>}
+            {ses.role==="a" && <div><label style={lbl}>Select Staff</label><select style={sInp} value={pEmp} onChange={e=>setPEmp(e.target.value)}><option value="">Select...</option>{emps.filter(e=>e.id!=="admin").map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></div>}
             <div><label style={lbl}>Start Year</label><input type="number" style={sInp} value={pFy} onChange={e=>setPFy(e.target.value)} /></div>
             <div><label style={lbl}>Month</label><select style={sInp} value={pMo} onChange={e=>setPMo(e.target.value)}>{MS.map(m=><option key={m} value={m}>{mL(m, pFy)}</option>)}</select></div>
           </div>
           <button style={{padding:"12px 24px",background:"#1a1a2e",color:"#fff",border:"none",borderRadius:6,width:"100%",fontSize:14,fontWeight:"bold"}} onClick={()=>{
             const t = ses.role==="a"?pEmp:ses.id; const ents = (pay[t]?.[pFy] || []).filter(x=>x.m===pMo);
-            if(ents.length) setSlip(buildSlip(emps.find(e=>e.id===t),pMo,fyL(pFy),ents,att[t]?.[pMo])); else alert("No record found");
+            if(ents.length) setSlip(buildSlip(emps.find(e=>e.id===t),pMo,pFy,fyL(pFy),ents,att[t]?.[pMo])); else alert("No record found");
           }}>Generate PDF Payslip</button>
         </div>
       )}
