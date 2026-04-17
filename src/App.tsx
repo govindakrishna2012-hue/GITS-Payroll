@@ -23,7 +23,6 @@ const dd  = r => (r.lop||0) + (r.pt||0) + (r.tds||0) + (r.adv||0) + (r.othD||0);
 const np  = r => gr(r) - dd(r);
 const txInc = r => np(r) + (r.pt||0) + (r.tds||0);
 
-// Flips YYYY-MM-DD to DD-MM-YYYY for the PDF
 const fmtDate = (dStr) => {
   if (!dStr) return "-";
   if (dStr.includes("-")) {
@@ -58,20 +57,40 @@ const exportCSV = (rows, fn) => {
   a.download = fn; document.body.appendChild(a); a.click(); setTimeout(() => document.body.removeChild(a), 100);
 };
 
-// 🟢 PROFESSIONAL PAYSLIP FORMAT 🟢
+// 🟢 AGGREGATING PAYSLIP GENERATOR 🟢
 const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
-  const sal = entries.find(r => r.t === "s") || {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""};
-  const incs = entries.filter(r => r.t === "i").reduce((s,r)=>s+(r.inc||0), 0);
+  // Reduces ALL entries for the selected month into a single, unified total
+  const sal = entries.reduce((acc, curr) => ({
+      basic: acc.basic + (Number(curr.basic) || 0),
+      hra: acc.hra + (Number(curr.hra) || 0),
+      conv: acc.conv + (Number(curr.conv) || 0),
+      med: acc.med + (Number(curr.med) || 0),
+      inc: acc.inc + (Number(curr.inc) || 0),
+      oth: acc.oth + (Number(curr.oth) || 0),
+      lop: acc.lop + (Number(curr.lop) || 0),
+      adv: acc.adv + (Number(curr.adv) || 0),
+      pt: acc.pt + (Number(curr.pt) || 0),
+      tds: acc.tds + (Number(curr.tds) || 0),
+      othD: acc.othD + (Number(curr.othD) || 0),
+      note: curr.note ? (acc.note ? acc.note + " | " + curr.note : curr.note) : acc.note
+  }), {basic:0,hra:0,conv:0,med:0,inc:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""});
+
+  const incs = sal.inc;
   const a = att || {}; 
   const wd = getWD(mo, fy); 
   const present = a.present !== undefined && a.present !== null ? a.present : "-";
   const leave = a.leave !== undefined && a.leave !== null ? a.leave : "-";
   const bal = a.bal !== undefined && a.bal !== null ? a.bal : "-";
-  const g = gr(sal) + incs, d = dd(sal), n = g - d; const ctc = emp.basic ? emp.basic * 12 : 0;
+  const g = gr(sal), d = dd(sal), n = g - d; 
+  const ctc = emp.basic ? emp.basic * 12 : 0;
   const displayYear = ["Jan","Feb","Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
   
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payslip - ${emp.name}</title><style>body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f4f7f6;padding:30px;color:#333;margin:0}.box{max-width:800px;margin:auto;background:#fff;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,.05);border-radius:8px;border-top:5px solid #185FA5}.hdr{display:flex;justify-content:space-between;border-bottom:2px solid #eee;padding-bottom:20px;margin-bottom:25px}.h-l h1{margin:0 0 5px 0;color:#1a1a2e;font-size:24px}.h-l p{margin:0;font-size:12px;color:#666}.h-r{text-align:right}.h-r h2{margin:0 0 5px 0;color:#185FA5;font-size:20px;letter-spacing:1px}.h-r p{margin:0;font-size:14px;font-weight:600;color:#444}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;background:#f8fafc;padding:20px;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:25px;font-size:12px}.row{display:flex;margin-bottom:6px}.lbl{width:135px;font-weight:600;color:#555}.val{font-weight:600;color:#111}table{width:100%;border-collapse:collapse;margin-bottom:25px;font-size:12px}th{background:#1a1a2e;color:#fff;text-align:left;padding:10px;font-weight:500;border:1px solid #1a1a2e}td{padding:10px;border:1px solid #e2e8f0;color:#333}.tr{text-align:right}.fw{font-weight:600}.tot td{font-weight:700;background:#f8fafc;font-size:13px;border-top:2px solid #cbd5e1}.net{background:#e8f5e9;border-left:5px solid #1D9E75;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;margin-bottom:30px}.n-t{font-size:14px;font-weight:700;color:#1D9E75;margin:0;text-transform:uppercase}.n-a{font-size:22px;font-weight:800;color:#111;margin:0}.sig{display:flex;justify-content:space-between;margin-top:50px}.s-l{font-size:12px;font-weight:600;color:#444;border-top:1px solid #ccc;padding-top:10px;width:180px;text-align:center}.ftr{text-align:center;margin-top:30px;font-size:10px;color:#888;border-top:1px solid #eee;padding-top:15px}.btn{display:block;width:200px;margin:0 auto 20px;padding:12px;text-align:center;background:#185FA5;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600}@media print{body{background:#fff;padding:0}.box{box-shadow:none;border:none;padding:0}.btn{display:none}}</style></head><body><button class="btn" onclick="window.print()">Print Payslip</button><div class="box"><div class="hdr"><div class="h-l"><h1>${CO}</h1><p>${AD}</p></div><div class="h-r"><h2>PAYSLIP</h2><p>${mo.toUpperCase()} ${displayYear}</p></div></div><div class="grid"><div><div class="row"><div class="lbl">Employee Name</div><div class="val">: ${emp.name}</div></div><div class="row"><div class="lbl">Employee ID</div><div class="val">: ${emp.id}</div></div><div class="row"><div class="lbl">Designation</div><div class="val">: ${emp.desig||"-"}</div></div><div class="row"><div class="lbl">Date of Joining</div><div class="val">: ${fmtDate(emp.start)}</div></div><div class="row"><div class="lbl">PAN</div><div class="val">: ${emp.pan||"-"}</div></div><div class="row"><div class="lbl">Bank A/C</div><div class="val">: ${emp.bank||"-"}</div></div></div><div><div class="row"><div class="lbl">Total Working Days</div><div class="val">: ${wd}</div></div><div class="row"><div class="lbl">Days Worked</div><div class="val">: ${present}</div></div><div class="row"><div class="lbl">Leave Availed</div><div class="val">: ${leave}</div></div><div class="row"><div class="lbl">Leave Balance</div><div class="val">: ${bal}</div></div></div></div><table><thead><tr><th style="width:35%">EARNINGS</th><th class="tr" style="width:15%">AMOUNT</th><th style="width:35%">DEDUCTIONS</th><th class="tr" style="width:15%">AMOUNT</th></tr></thead><tbody><tr><td>Basic Salary</td><td class="tr fw">${f$(sal.basic)}</td><td>Profession Tax</td><td class="tr fw">${f$(sal.pt)}</td></tr><tr><td>House Rent Allowance</td><td class="tr fw">${f$(sal.hra)}</td><td>Tax Deducted at Source (TDS)</td><td class="tr fw">${f$(sal.tds)}</td></tr><tr><td>Conveyance</td><td class="tr fw">${f$(sal.conv)}</td><td>Staff Advance</td><td class="tr fw">${f$(sal.adv)}</td></tr><tr><td>Medical Allowance</td><td class="tr fw">${f$(sal.med)}</td><td>Loss of Pay (LOP)</td><td class="tr fw">${f$(sal.lop)}</td></tr><tr><td>Incentives</td><td class="tr fw">${f$(incs)}</td><td>Other Deductions</td><td class="tr fw">${f$(sal.othD)}</td></tr><tr><td>Arrears & Others</td><td class="tr fw">${f$(sal.oth)}</td><td></td><td class="tr fw"></td></tr><tr class="tot"><td>Gross Earnings</td><td class="tr">${f$(g)}</td><td>Total Deductions</td><td class="tr">${f$(d)}</td></tr></tbody></table><div class="net"><div class="n-t">Net Pay<br><span style="font-size:10px;color:#555;text-transform:none;font-weight:normal">(Gross Earnings - Total Deductions)</span></div><div class="n-a">₹ ${f$(n)}</div></div>${sal.note?`<div style="font-size:12px;color:#444;background:#fff8e1;padding:10px 15px;border-left:3px solid #ffc107;border-radius:4px;margin-bottom:20px"><b>Note:</b> ${sal.note}</div>`:""}<div class="sig"><div class="s-l">Employer Signature</div><div class="s-l">Employee Signature</div></div><div class="ftr">This is a computer-generated document. No physical signature is required.</div></div></body></html>`;
 };
+
+// --- DATA SEEDING SETUP ---
+const E0 = [{id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""}];
+const P0 = { SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"}]} };
 
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
@@ -83,6 +102,53 @@ export default function App() {
     const initDb = async () => {
       const { data: empData, error } = await supabase.from('gits_employees').select('*');
       if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
+
+      // --- MIGRATION SAFEGUARD ---
+      try {
+         let didMigrate = false;
+         if (empData && empData.length === 0) {
+             const empInserts = E0.map(e => ({
+                id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
+                phone: e.phone, email: e.email, pwd: e.pwd, start_date: e.start, end_date: e.end,
+                status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink, sec_q: null, sec_a: null
+             }));
+             await supabase.from('gits_employees').insert(empInserts);
+             didMigrate = true;
+         }
+         const { data: ledCheck } = await supabase.from('gits_ledger').select('id').limit(1);
+         if (ledCheck && ledCheck.length === 0) {
+             const ledgerInserts = [];
+             Object.keys(P0).forEach(eid => {
+                Object.keys(P0[eid]).forEach(fyear => {
+                   P0[eid][fyear].forEach(r => {
+                      ledgerInserts.push({ emp_id: eid, fy: fyear, mo: r.m, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othd: r.othD||0, note: r.note||"" });
+                   });
+                });
+             });
+             if(ledgerInserts.length) await supabase.from('gits_ledger').insert(ledgerInserts);
+             didMigrate = true;
+         }
+         const { data: attCheck } = await supabase.from('gits_attendance').select('id').limit(1);
+         if (attCheck && attCheck.length === 0) {
+             const localAtt = initA(E0);
+             const attInserts = [];
+             Object.keys(localAtt).forEach(eid => {
+                Object.keys(localAtt[eid]).forEach(month => {
+                   const a = localAtt[eid][month];
+                   attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, holiday: a.holiday, comments: a.comments });
+                });
+             });
+             if(attInserts.length) await supabase.from('gits_attendance').insert(attInserts);
+             didMigrate = true;
+         }
+
+         if (didMigrate) {
+             window.location.reload();
+             return;
+         }
+      } catch (err) {
+         console.error("Migration Error:", err);
+      }
 
       // --- STANDARD CLOUD DATA LOAD ---
       const formattedEmps = empData.map(e => ({
@@ -668,8 +734,8 @@ export default function App() {
                     <td style={tdS}><b>{e.name}</b><br/><small style={{color:"#888"}}>{e.desig}</small></td>
                     <td style={tdS}>{e.email || "-"}</td>
                     <td style={tdS}>{e.phone || "-"}</td>
-                    <td style={tdS}>{e.start || "-"}</td>
-                    <td style={tdS}>{e.end || "-"}</td>
+                    <td style={tdS}>{fmtDate(e.start)}</td>
+                    <td style={tdS}>{fmtDate(e.end)}</td>
                     <td style={tdS}>
                         <span style={{
                             padding:"3px 8px", borderRadius:12, fontSize:11, fontWeight:"bold",
