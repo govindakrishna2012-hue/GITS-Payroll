@@ -36,10 +36,11 @@ const getWD = (mStr, yStr) => {
   return count;
 };
 
-// --- COMPRESSED SEED DATA ---
-const E0 = [{id:"SRR1001",name:"P.Umashankar Anand",desig:"Senior Recruiter",pan:"ALKPA8190Q",cat:"Onshore",basic:38500,phone:"9000000001",email:"umashankar@gatewayit.in",pwd:"SRR1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"SRR1003",name:"V Sunil Kumar",desig:"Senior Recruiter",pan:"DJCPS8542F",cat:"Onshore",basic:44500,phone:"9000000002",email:"sunil@gatewayit.in",pwd:"SRR1003",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015028 ANDHRA BANK",driveLink:""},{id:"ADMN1002",name:"R Govinda Krishnan",desig:"Accounts Manager",pan:"AUPPK3079C",cat:"Onshore",basic:33000,phone:"9000000003",email:"govinda@gatewayit.in",pwd:"ADMN1002",start:"07-10-2013",end:"",status:"Active",comments:"",bank:"209610100015027 ANDHRA BANK",driveLink:""},{id:"D1001",name:"Nagaraju D",desig:"Driver cum Office Boy",pan:"ANJPD1432D",cat:"Onshore",basic:22000,phone:"9000000004",email:"nagaraju@gatewayit.in",pwd:"D1001",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015029 ANDHRA BANK",driveLink:""},{id:"ADMN1004",name:"Balamurali Krishna",desig:"Accountant",pan:"CDNPB5192E",cat:"Onshore",basic:25000,phone:"9000000005",email:"balamurali@gatewayit.in",pwd:"ADMN1004",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015030 ANDHRA BANK",driveLink:""},{id:"RR1026",name:"Maneendra Basa",desig:"Recruiter",pan:"BALPB9607E",cat:"Onshore",basic:30000,phone:"9000000006",email:"maneendra@gatewayit.in",pwd:"RR1026",start:"01-04-2024",end:"",status:"Active",comments:"",bank:"209610100015031 ANDHRA BANK",driveLink:""},{id:"BA1001",name:"Bhaskar Akkala",desig:"Senior Software Developer",pan:"AEJPA3495G",cat:"Offshore",basic:200000,phone:"9000000007",email:"bhaskar@gatewayit.in",pwd:"BA1001",start:"01-05-2024",end:"",status:"Active",comments:"",bank:"209610100015032 ANDHRA BANK",driveLink:""}];
-const P0 = { SRR1001:{2025:[{m:"Apr",t:"s",basic:26330,hra:9870,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.38,300/-"}]}, SRR1003:{2025:[{m:"Apr",t:"s",basic:30140,hra:12060,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.44,300/-"}]}, ADMN1002:{2025:[{m:"Apr",t:"s",basic:22840,hra:7860,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.32,800/-"}]}, D1001:{2025:[{m:"Apr",t:"s",basic:14250,hra:5700,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:""}]}, ADMN1004:{2025:[{m:"Apr",t:"s",basic:16450,hra:6500,conv:800,med:1250,inc:0,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.24,800/-"}]}, RR1026:{2025:[{m:"Apr",t:"s",basic:20700,hra:7000,conv:800,med:1500,inc:10000,oth:0,lop:0,adv:0,pt:200,tds:0,othD:0,note:"Salary Rs.39,800/-"}]}, BA1001:{2025:[{m:"May",t:"s",basic:131700,hra:66000,conv:800,med:1500,inc:0,oth:0,lop:0,adv:0,pt:200,tds:20050,othD:0,note:"Salary Rs.1,79,750/-"}]} };
-const initA = emps => { const a = {}; emps.forEach(e => { a[e.id] = {}; MS.forEach(m => { a[e.id][m] = {present:null, leave:null, bal:null, lop:null, holiday:null, comments:""}; }); }); return a; };
+const getEmptyAtt = () => {
+    const a = {};
+    MS.forEach(m => { a[m] = {present:null, leave:null, bal:null, lop:null, holiday:null, comments:""}; });
+    return a;
+};
 
 const exportCSV = (rows, fn) => {
   const csv = "\uFEFF" + rows.map(r => r.map(c => `"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
@@ -70,53 +71,6 @@ export default function App() {
       const { data: empData, error } = await supabase.from('gits_employees').select('*');
       if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
 
-      try {
-         let didMigrate = false;
-         if (empData && empData.length === 0) {
-             const empInserts = E0.map(e => ({
-                id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
-                phone: e.phone, email: e.email, pwd: e.pwd, start_date: e.start, end_date: e.end,
-                status: e.status, comments: e.comments, bank: e.bank, drive_link: e.driveLink, sec_q: null, sec_a: null
-             }));
-             await supabase.from('gits_employees').insert(empInserts);
-             didMigrate = true;
-         }
-         const { data: ledCheck } = await supabase.from('gits_ledger').select('id').limit(1);
-         if (ledCheck && ledCheck.length === 0) {
-             const ledgerInserts = [];
-             Object.keys(P0).forEach(eid => {
-                Object.keys(P0[eid]).forEach(fyear => {
-                   P0[eid][fyear].forEach(r => {
-                      ledgerInserts.push({ emp_id: eid, fy: fyear, mo: r.m, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othd: r.othD||0, note: r.note||"" });
-                   });
-                });
-             });
-             if(ledgerInserts.length) await supabase.from('gits_ledger').insert(ledgerInserts);
-             didMigrate = true;
-         }
-         const { data: attCheck } = await supabase.from('gits_attendance').select('id').limit(1);
-         if (attCheck && attCheck.length === 0) {
-             const localAtt = initA(E0);
-             const attInserts = [];
-             Object.keys(localAtt).forEach(eid => {
-                Object.keys(localAtt[eid]).forEach(month => {
-                   const a = localAtt[eid][month];
-                   attInserts.push({ emp_id: eid, fy: "2025", mo: month, present: a.present, leave: a.leave, bal: a.bal, lop: a.lop, holiday: a.holiday, comments: a.comments });
-                });
-             });
-             if(attInserts.length) await supabase.from('gits_attendance').insert(attInserts);
-             didMigrate = true;
-         }
-
-         if (didMigrate) {
-             window.location.reload();
-             return;
-         }
-      } catch (err) {
-         console.error("Migration Error:", err);
-      }
-
-      // --- STANDARD CLOUD DATA LOAD ---
       const formattedEmps = empData.map(e => ({
           id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
           phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
@@ -134,10 +88,12 @@ export default function App() {
       }
 
       const { data: attData } = await supabase.from('gits_attendance').select('*');
-      const formattedAtt = initA(formattedEmps);
+      const formattedAtt = {};
+      formattedEmps.forEach(e => { formattedAtt[e.id] = getEmptyAtt(); });
+      
       if(attData) {
           attData.forEach(r => {
-              if(!formattedAtt[r.emp_id]) formattedAtt[r.emp_id] = {};
+              if(!formattedAtt[r.emp_id]) formattedAtt[r.emp_id] = getEmptyAtt();
               formattedAtt[r.emp_id][r.mo] = { present: r.present, leave: r.leave, bal: r.bal, lop: r.lop, holiday: r.holiday, comments: r.comments };
           });
       }
@@ -174,8 +130,7 @@ export default function App() {
 
   // --- AUTH & PROFILE STATES ---
   const idR = useRef(""), pwR = useRef("");
-  
-  const [forgotStep, setForgotStep] = useState(0); // 0=Enter ID, 1=Answer Q, 2=New Pwd
+  const [forgotStep, setForgotStep] = useState(0); 
   const [forgotId, setForgotId] = useState("");
   const [forgotUser, setForgotUser] = useState(null);
   const [secAnsInput, setSecAnsInput] = useState("");
@@ -210,7 +165,6 @@ export default function App() {
     }
   };
 
-  // --- FORGOT PASSWORD LOGIC ---
   const handleForgotNext = async () => {
       if (forgotStep === 0) {
           const e = emps.find(x => x.id === forgotId.trim() || x.email === forgotId.trim());
@@ -230,12 +184,10 @@ export default function App() {
       }
   };
 
-  // --- PROFILE UPDATE LOGIC ---
   const handleUpdateProfile = async () => {
       const userId = ses.id;
       let pwdToSave = undefined;
       
-      // Handle Password Change Attempt
       if (curPwd || newPwd || confPwd) {
           if(!curPwd || !newPwd || !confPwd) return alert("To change password, fill all password fields.");
           if(newPwd !== confPwd) return alert("New passwords do not match.");
@@ -250,7 +202,6 @@ export default function App() {
           pwdToSave = newPwd;
       }
       
-      // Update Admin Record
       if (ses.role === "a") {
           const dbAdmin = emps.find(x => x.id === "admin");
           const payload = {};
@@ -265,9 +216,7 @@ export default function App() {
               await supabase.from('gits_employees').update(payload).eq('id', 'admin');
               setEmps(p=>p.map(x=>x.id==="admin" ? {...x, ...payload} : x));
           }
-      } 
-      // Update Employee Record
-      else {
+      } else {
           const payload = {};
           if (pwdToSave) payload.pwd = pwdToSave;
           if (secQ) payload.sec_q = secQ;
@@ -289,7 +238,7 @@ export default function App() {
         phone: newEmp.phone, email: newEmp.email, pwd: newEmp.pwd, start_date: newEmp.start, end_date: newEmp.end,
         status: newEmp.status, comments: newEmp.comments, bank: newEmp.bank, drive_link: newEmp.driveLink
     });
-    setEmps([...emps, newEmp]); setPay({...pay, [nE.id]: {}}); setAtt({...att, [nE.id]: {} });
+    setEmps([...emps, newEmp]); setPay({...pay, [nE.id]: {}}); setAtt({...att, [nE.id]: getEmptyAtt() });
     setShowAddEmp(false); setNE({id:"",name:"",desig:"",pan:"",cat:"Onshore",basic:"",phone:"",email:"",pwd:"",start:"",end:"",status:"Active",bank:"",comments:"",driveLink:""});
   };
 
@@ -299,11 +248,7 @@ export default function App() {
         phone: editData.phone, email: editData.email, start_date: editData.start, end_date: editData.end,
         status: editData.status, comments: combinedComments, bank: editData.bank, drive_link: editData.driveLink
     };
-    
-    // ADMIN OVERRIDE PASSWORD
-    if (editData.adminForcePwd) {
-        payload.pwd = editData.adminForcePwd;
-    }
+    if (editData.adminForcePwd) payload.pwd = editData.adminForcePwd;
 
     await supabase.from('gits_employees').update(payload).eq('id', editEmp);
     setEmps(p=>p.map(x=>x.id===editEmp?{...x,...payload,comments:combinedComments}:x)); 
@@ -475,7 +420,6 @@ export default function App() {
                   <p style={{margin:"5px 0 0 0", fontSize:14}}><b>ID:</b> {myE?.id || "admin"}</p>
               </div>
 
-              {/* Password Section */}
               <div style={{display:"flex", flexDirection:"column", gap:15}}>
                 <h4 style={{margin:0}}>Change Password</h4>
                 <div>
@@ -492,7 +436,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Security Question Section */}
               <div style={{display:"flex", flexDirection:"column", gap:15}}>
                 <h4 style={{margin:0}}>Recovery Question</h4>
                 <p style={{fontSize:11, color:"#666", margin:0}}>Set this up to reset your password yourself if you forget it.</p>
@@ -661,7 +604,6 @@ export default function App() {
                 <div><label style={lbl}>Status</label><select style={sInp} value={editData.status||"Active"} onChange={e=>setEditData({...editData,status:e.target.value})}><option>Active</option><option>Resigned</option><option>Terminated</option></select></div>
                 {editData.end && <div><label style={lbl}>Reason for leaving</label><input style={sInp} value={editData.reason||""} onChange={e=>setEditData({...editData,reason:e.target.value})}/></div>}
                 
-                {/* ADMIN OVERRIDE SECTION */}
                 <div style={{borderLeft:"3px solid #D85A30", paddingLeft:10}}>
                    <label style={{...lbl, color:"#D85A30", fontWeight:"bold"}}>Force Reset Password (Admin Only)</label>
                    <input style={sInp} value={editData.adminForcePwd||""} onChange={e=>setEditData({...editData,adminForcePwd:e.target.value})} placeholder="Type to overwrite user password"/>
