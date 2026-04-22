@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // ==========================================
 // 🔴 CLOUD DATABASE CONNECTION (SUPABASE) 🔴
-const SUPABASE_URL = "https://vmntpwethpuvptczrfft.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://vmntpwethpuvptczrfft.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtbnRwd2V0aHB1dnB0Y3pyZmZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzQ3ODUsImV4cCI6MjA5MjAxMDc4NX0.eAtuPwCE2WH5ReV1cXaxah6c4hxdo2pjS8d62nWIKCo";
 // ==========================================
 
