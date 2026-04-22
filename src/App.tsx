@@ -4,7 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // ==========================================
 // 🔴 CLOUD DATABASE CONNECTION (SUPABASE) 🔴
-const SUPABASE_URL = "https://vmntpwethpuvptczrfft.supabase.co/rest/v1/";
+// Pre-filled with your exact verified credentials!
+const SUPABASE_URL = "https://vmntpwethpuvptczrfft.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtbnRwd2V0aHB1dnB0Y3pyZmZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzQ3ODUsImV4cCI6MjA5MjAxMDc4NX0.eAtuPwCE2WH5ReV1cXaxah6c4hxdo2pjS8d62nWIKCo";
 // ==========================================
 
@@ -58,7 +59,20 @@ const exportCSV = (rows, fn) => {
 };
 
 const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
-  const sal = entries.find(r => r.t === "s") || {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""};
+  const sal = entries.filter(r => r.t === "s").reduce((acc, curr) => ({
+    basic: acc.basic + Number(curr.basic||0),
+    hra: acc.hra + Number(curr.hra||0),
+    conv: acc.conv + Number(curr.conv||0),
+    med: acc.med + Number(curr.med||0),
+    oth: acc.oth + Number(curr.oth||0),
+    lop: acc.lop + Number(curr.lop||0),
+    adv: acc.adv + Number(curr.adv||0),
+    pt: acc.pt + Number(curr.pt||0),
+    tds: acc.tds + Number(curr.tds||0),
+    othD: acc.othD + Number(curr.othD||0),
+    note: acc.note ? (curr.note ? acc.note + " | " + curr.note : acc.note) : (curr.note || "")
+  }), {basic:0,hra:0,conv:0,med:0,oth:0,lop:0,adv:0,pt:0,tds:0,othD:0,note:""});
+
   const incs = entries.filter(r => r.t === "i").reduce((s,r)=>s+(r.inc||0), 0);
   const a = att || {}; 
   const wd = getWD(mo, fy); 
@@ -73,45 +87,57 @@ const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
 
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
+  const [sysError, setSysError] = useState(null);
+  
   const [emps,setEmps] = useState([]);
   const [pay,setPay]   = useState({});
   const [att,setAtt]   = useState({});
 
   useEffect(() => {
     const initDb = async () => {
-      const { data: empData, error } = await supabase.from('gits_employees').select('*');
-      if (error) { console.error(error); alert("Database Connection Failed. Check URL and Key."); return; }
+      try {
+        const { data: empData, error } = await supabase.from('gits_employees').select('*');
+        
+        // 🔴 RENDER ERROR ON SCREEN INSTEAD OF BLOCKED ALERT 🔴
+        if (error) { 
+          console.error(error); 
+          setSysError(`${error.message}\nDetails: ${error.details || "N/A"}\nHint: ${error.hint || "N/A"}`);
+          return; 
+        }
 
-      const formattedEmps = empData.map(e => ({
-          id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
-          phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
-          status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link, sec_q: e.sec_q, sec_a: e.sec_a
-      }));
+        const formattedEmps = empData.map(e => ({
+            id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
+            phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
+            status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link, sec_q: e.sec_q, sec_a: e.sec_a
+        }));
 
-      const { data: ledData } = await supabase.from('gits_ledger').select('*');
-      const formattedPay = {};
-      if(ledData) {
-          ledData.forEach(r => {
-              if(!formattedPay[r.emp_id]) formattedPay[r.emp_id] = {};
-              if(!formattedPay[r.emp_id][r.fy]) formattedPay[r.emp_id][r.fy] = [];
-              formattedPay[r.emp_id][r.fy].push({ db_id: r.id, m: r.mo, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othd, note: r.note });
-          });
+        const { data: ledData } = await supabase.from('gits_ledger').select('*');
+        const formattedPay = {};
+        if(ledData) {
+            ledData.forEach(r => {
+                if(!formattedPay[r.emp_id]) formattedPay[r.emp_id] = {};
+                if(!formattedPay[r.emp_id][r.fy]) formattedPay[r.emp_id][r.fy] = [];
+                formattedPay[r.emp_id][r.fy].push({ db_id: r.id, m: r.mo, t: r.t, basic: r.basic, hra: r.hra, conv: r.conv, med: r.med, inc: r.inc, oth: r.oth, lop: r.lop, adv: r.adv, pt: r.pt, tds: r.tds, othD: r.othd, note: r.note });
+            });
+        }
+
+        const { data: attData } = await supabase.from('gits_attendance').select('*');
+        const formattedAtt = {};
+        formattedEmps.forEach(e => { formattedAtt[e.id] = getEmptyAtt(); });
+        
+        if(attData) {
+            attData.forEach(r => {
+                if(!formattedAtt[r.emp_id]) formattedAtt[r.emp_id] = getEmptyAtt();
+                formattedAtt[r.emp_id][r.mo] = { present: r.present, leave: r.leave, bal: r.bal, lop: r.lop, holiday: r.holiday, comments: r.comments };
+            });
+        }
+
+        setEmps(formattedEmps); setPay(formattedPay); setAtt(formattedAtt); setDbLoaded(true);
+      } catch (err) {
+        setSysError(err.message);
       }
-
-      const { data: attData } = await supabase.from('gits_attendance').select('*');
-      const formattedAtt = {};
-      formattedEmps.forEach(e => { formattedAtt[e.id] = getEmptyAtt(); });
-      
-      if(attData) {
-          attData.forEach(r => {
-              if(!formattedAtt[r.emp_id]) formattedAtt[r.emp_id] = getEmptyAtt();
-              formattedAtt[r.emp_id][r.mo] = { present: r.present, leave: r.leave, bal: r.bal, lop: r.lop, holiday: r.holiday, comments: r.comments };
-          });
-      }
-
-      setEmps(formattedEmps); setPay(formattedPay); setAtt(formattedAtt); setDbLoaded(true);
     };
-    if (SUPABASE_URL !== "PASTE_YOUR_URL_HERE") initDb();
+    initDb();
   }, []);
 
   const [ses,setSes]   = useState(null);
@@ -139,7 +165,6 @@ export default function App() {
   const [showOffCycle, setShowOffCycle] = useState(false);
   const [offCycleData, setOffCycleData] = useState({empId:"", basic:0, hra:0, conv:0, med:0, inc:0, oth:0, lop:0, adv:0, pt:0, tds:0, othD:0, note:""});
 
-  // --- AUTH & PROFILE STATES ---
   const idR = useRef(""), pwR = useRef("");
   const [forgotStep, setForgotStep] = useState(0); 
   const [forgotId, setForgotId] = useState("");
@@ -353,21 +378,17 @@ export default function App() {
     exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
   };
 
-  // 🟢 NEW: LOCAL STATE UPDATE ONLY 🟢
   const updAtt = (eid, m, field, val) => { 
     let newVal = val;
     if (field !== "comments") newVal = val === "" ? null : Number(val);
     setAtt(p => ({...p, [eid]: {...(p[eid]||{}), [m]: {...(p[eid]?.[m]||{}), [field]: newVal}}})); 
   };
 
-  // 🟢 NEW: EXPLICIT BATCH SAVE TO CLOUD 🟢
   const saveAttendance = async () => {
       try {
-          // 1. Delete existing records for this month/year to prevent duplicates
           const { error: delErr } = await supabase.from('gits_attendance').delete().eq('fy', fy).eq('mo', mo);
           if (delErr) throw delErr;
 
-          // 2. Prepare fresh inserts
           const inserts = [];
           emps.filter(e => e.id !== "admin").forEach(e => {
               const a = att[e.id]?.[mo];
@@ -376,7 +397,6 @@ export default function App() {
               }
           });
 
-          // 3. Insert cleanly
           if (inserts.length > 0) {
               const { error: insErr } = await supabase.from('gits_attendance').insert(inserts);
               if (insErr) throw insErr;
@@ -388,7 +408,7 @@ export default function App() {
       }
   };
 
-  if (SUPABASE_URL === "PASTE_YOUR_URL_HERE") return <div style={{padding:50,textAlign:"center",fontFamily:"sans-serif",color:"red"}}><h3>Stop!</h3><p>You must paste your Supabase Project URL and API Key at the very top of <b>App.tsx</b> on lines 8 and 9 before the app will load!</p></div>;
+  if (sysError) return <div style={{padding:50,textAlign:"center",fontFamily:"sans-serif",color:"red"}}><h3>🔴 SYSTEM ERROR 🔴</h3><pre style={{textAlign:"left",background:"#ffeeee",padding:20,borderRadius:8}}>{sysError}</pre></div>;
   if (!dbLoaded) return <div style={{padding:50,textAlign:"center",fontFamily:"sans-serif"}}><h3>Connecting to Cloud Database...</h3></div>;
   if (slip) return <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.8)",display:"flex",flexDirection:"column"}}><button style={{padding:15,background:"#1a1a2e",color:"#fff",border:"none",cursor:"pointer",fontWeight:"bold",fontSize:16}} onClick={()=>setSlip(null)}>✕ Close PDF Viewer</button><iframe srcDoc={slip} style={{flex:1,border:"none",background:"#fff"}} /></div>;
 
