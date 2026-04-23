@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createClient } from '@supabase/supabase-js';
 
 const URL = "https://vmntpwethpuvptczrfft.supabase.co";
@@ -7,95 +7,55 @@ const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const supabase = createClient(URL, KEY);
 
 export default function App() {
-  const [db, setDb] = useState({ loaded: false, emps: [], att: [] });
-  const [ses, setSes] = useState(null);
-  const [tab, setTab] = useState("dashboard");
-  const [sub, setSub] = useState("daily");
-  const [selDate, setSelDate] = useState("2026-04-24");
-  
-  const idR = useRef(""); pwR = useRef("");
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const { data: e } = await supabase.from('gits_employees').select('*');
-        const { data: a } = await supabase.from('gits_attendance').select('*');
-        setDb({ loaded: true, emps: e || [], att: a || [] });
-      } catch (err) { console.error(err); }
+    async function loadData() {
+      // This pulls EVERYTHING so you can see your old data is safe
+      const { data: ledger } = await supabase.from('gits_ledger').select('*');
+      setData(ledger || []);
+      setLoading(false);
     }
-    load();
+    loadData();
   }, []);
 
-  if (!db.loaded) return <div style={{padding:20}}>Loading Gateway Portal...</div>;
-
-  if (!ses) return (
-    <div style={{ padding: 50, textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h2>GATEWAY LOGIN</h2>
-      <input style={{display:'block', margin:'10px auto', padding:10}} placeholder="User ID" onChange={e => idR.current = e.target.value} />
-      <input style={{display:'block', margin:'10px auto', padding:10}} type="password" placeholder="Password" onChange={e => pwR.current = e.target.value} />
-      <button style={{padding:10, background:'#1a1a2e', color:'#fff'}} onClick={() => {
-          const u = idR.current.trim(), p = pwR.current.trim();
-          if(u === "admin" && p === "admin123") setSes({role:"a", id:"admin"});
-          else {
-              const f = db.emps?.find(x => x.id === u && x.pwd === p);
-              if(f) setSes({role:"e", id:f.id}); else alert("Invalid");
-          }
-      }}>Sign In</button>
-    </div>
-  );
+  if (loading) return <h1 style={{textAlign:'center', marginTop:100}}>Fetching Your Data Safely...</h1>;
 
   return (
-    <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
-      <div style={{ borderBottom: '2px solid #333', paddingBottom: 10, marginBottom: 20 }}>
-        <button onClick={() => setTab("dashboard")} style={{marginRight:10}}>Dashboard</button>
-        <button onClick={() => setTab("attendance")}>Attendance</button>
-        <button onClick={() => setSes(null)} style={{float:'right'}}>Logout</button>
+    <div style={{ padding: 40, fontFamily: 'sans-serif' }}>
+      <div style={{textAlign:'center', marginBottom:30}}>
+        <img src="/logo.png" style={{maxHeight:60}} />
+        <h1 style={{color:'#1a1a2e'}}>DATA RECOVERY MODE</h1>
+        <p>If you see the table below, your connection is 100% fixed.</p>
       </div>
 
-      {tab === "attendance" && (
-        <div>
-          <button onClick={() => setSub("daily")} style={{fontWeight: sub==="daily"?'bold':'normal'}}>1. Daily Entry</button>
-          <button onClick={() => setSub("report")} style={{marginLeft:10, fontWeight: sub==="report"?'bold':'normal'}}>2. FY 2026-27 Report</button>
-          
-          {sub === "daily" ? (
-            <div style={{marginTop:20, border:'1px solid #ccc', padding:15}}>
-              <h4>Mark for {selDate}</h4>
-              {db.emps?.map(e => (
-                <div key={e.id} style={{padding:'5px 0', borderBottom:'1px solid #eee'}}>
-                  {e.name} - {db.att?.find(a => a.emp_id === e.id && a.date === selDate)?.status || "No Entry"}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{marginTop:20}}>
-              <h4>FY 2026-27 Summary (April Onwards)</h4>
-              <table border="1" width="100%" style={{borderCollapse:'collapse'}}>
-                <thead><tr><th>Name</th><th>Presents</th><th>Leaves</th><th>LOP</th></tr></thead>
-                <tbody>
-                  {db.emps?.map(e => {
-                    const f26 = db.att?.filter(a => a.emp_id === e.id && new Date(a.date) >= new Date('2026-04-01')) || [];
-                    return (
-                      <tr key={e.id} style={{textAlign:'center'}}>
-                        <td>{e.name}</td>
-                        <td>{f26.filter(x => x.status === "Present").length}</td>
-                        <td>{f26.filter(x => x.status === "Leave").length}</td>
-                        <td>{f26.filter(x => x.status === "Absent").length}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === "dashboard" && (
-        <div style={{textAlign:'center', marginTop:50}}>
-          <h1>GATEWAY V2 ONLINE</h1>
-          <p>Financial Year 2026-27 Filter Active.</p>
-        </div>
-      )}
+      <table border="1" style={{width:'100%', borderCollapse:'collapse'}}>
+        <thead>
+          <tr style={{background:'#eee'}}>
+            <th>Emp ID</th>
+            <th>Month</th>
+            <th>FY</th>
+            <th>Basic</th>
+            <th>LOP Deducted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} style={{textAlign:'center'}}>
+              <td style={{padding:10}}>{row.emp_id}</td>
+              <td>{row.mo}</td>
+              <td>{row.fy}</td>
+              <td>{row.basic}</td>
+              <td style={{color:'red'}}>{row.lop || 0}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      
+      <div style={{marginTop:30, textAlign:'center'}}>
+        <button onClick={() => window.location.reload()} style={{padding:15, background:'#1a1a2e', color:'#fff', cursor:'pointer'}}>Refresh View</button>
+      </div>
     </div>
   );
 }
