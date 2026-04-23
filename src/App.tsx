@@ -1,4 +1,12 @@
 // @ts-nocheck
+// 1. Strict Year Filter
+const f26 = db.att.filter(a => a.emp_id === e.id && new Date(a.date) >= new Date('2026-04-01'));
+
+// 2. Updated Welcome Message (to verify deployment)
+<h2>GATEWAY PORTAL V2 - APRIL 2026</h2>
+
+// 3. New Tab Logic
+const [subView, setSubView] = useState("daily_entry");
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createClient } from '@supabase/supabase-js';
 
