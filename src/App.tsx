@@ -67,7 +67,6 @@ const exportCSV = (rows, fn) => {
   setTimeout(() => document.body.removeChild(a), 100);
 };
 
-// Formatted multi-line so your editor won't break it
 const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
   const sal = entries.filter((r) => r.t === "s").reduce(
     (acc, curr) => ({
@@ -104,7 +103,7 @@ const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 30px; color: #333; margin: 0; }
     .box { max-width: 800px; margin: auto; background: #fff; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,.05); border-radius: 8px; border-top: 5px solid #185FA5; }
     .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; }
-    .h-l h1 { margin: 0 0 5px 0; color: #1a1a2e; font-size: 24px; }
+    .h-l img { margin: 0 0 5px 0; max-height: 50px; display: block; }
     .h-l p { margin: 0; font-size: 12px; color: #666; }
     .h-r { text-align: right; }
     .h-r h2 { margin: 0 0 5px 0; color: #185FA5; font-size: 20px; letter-spacing: 1px; }
@@ -134,7 +133,7 @@ const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
   <div class="box">
     <div class="hdr">
       <div class="h-l">
-        <h1>${CO}</h1>
+        <img src="/logo.png" alt="GITS Logo" />
         <p>${AD}</p>
       </div>
       <div class="h-r">
@@ -611,8 +610,10 @@ export default function App() {
   if (!ses) return (
     <div style={{ display: "flex", justifyContent: "center", paddingTop: 100, fontFamily: "sans-serif", background: "#f4f7f6", minHeight: "100vh" }}>
       <div style={{ width: 320, padding: 30, background: "#fff", border: "1px solid #ddd", borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", height: "fit-content" }}>
-        <img src="logo.png" style={{ maxHeight: 50, display: "block", margin: "0 auto 20px" }} />
-        <h2 style={{ textAlign: "center", marginBottom: 20 }}>{CO}</h2>
+        
+        <img src="/logo.png" alt="GITS Logo" style={{ maxHeight: 60, display: "block", margin: "0 auto 20px" }} />
+        <h3 style={{ textAlign: "center", marginBottom: 20, color: "#666", marginTop: -10 }}>Portal Login</h3>
+
         {forgotStep === 0 ? (
           <>
             <input style={sInp} placeholder="Employee ID" onChange={(e) => (idR.current = e.target.value)} />
@@ -658,20 +659,27 @@ export default function App() {
           <b>Warning: Database issue detected.</b> Some data may not load. Detail: {sysWarn}.
         </div>
       )}
+      
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #1a1a2e", paddingBottom: 10, marginBottom: 20 }}>
-        <div><h2 style={{ margin: 0 }}>{CO} — {ses.role === "e" ? "Employee Portal" : "Admin"}</h2><small>{AD}</small></div>
+        <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+          <img src="/logo.png" alt="GITS Logo" style={{ maxHeight: 45 }} />
+          <div><h2 style={{ margin: 0, color: "#444" }}>{ses.role === "e" ? "Employee Portal" : "Admin Portal"}</h2><small>{AD}</small></div>
+        </div>
+        
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {DRIVE_LINK && <a href={DRIVE_LINK} target="_blank" rel="noreferrer" style={{ ...btn, background: "#4285F4", color: "#fff", textDecoration: "none", fontWeight: "bold", display: "flex", alignItems: "center" }}>📂 {ses.role === "a" ? "Admin Drive" : "My Folder"}</a>}
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ fontSize: 13, fontWeight: "bold" }}>FY</span><input type="number" value={fy} onChange={(e) => setFy(e.target.value)} style={{ ...sInp, width: 80, padding: "6px" }} /><span style={{ fontSize: 13, fontWeight: "bold" }}>{fyL(fy)}</span></div>
           <button style={btn} onClick={() => { setSes(null); setTab("dashboard"); }}>Sign Out</button>
         </div>
       </div>
+      
       <div style={{ display: "flex", gap: 10, marginBottom: 25, borderBottom: "1px solid #eee", flexWrap: "wrap" }}>
         {TABS.map((t) => (
           <button key={t} style={{ padding: "10px 15px", background: "none", border: "none", borderBottom: tab === t ? "3px solid #1a1a2e" : "none", cursor: "pointer", fontWeight: tab === t ? "bold" : "normal" }} onClick={() => { setTab(t); if (t === "profile" && myE) { setSecQ(myE.sec_q || ""); setSecA(myE.sec_a || ""); } }}>{t.toUpperCase()}</button>
         ))}
       </div>
 
+      {/* --- PROFILE TAB --- */}
       {tab === "profile" && (
         <div style={{ ...card, maxWidth: 600, margin: "auto" }}>
           <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: 10 }}>My Profile & Security</h3>
@@ -703,6 +711,7 @@ export default function App() {
         </div>
       )}
 
+      {/* --- DASHBOARD TAB --- */}
       {tab === "dashboard" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 20, alignItems: "center" }}>
