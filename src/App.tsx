@@ -3,7 +3,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // ==========================================
-// 🔴 CLOUD DATABASE CONNECTION (SUPABASE) 🔴
+// 🔴 CLOUD DATABASE CONNECTION (LIVE) 🔴
 const SUPABASE_URL = "https://vmntpwethpuvptczrfft.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtbnRwd2V0aHB1dnB0Y3pyZmZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MzQ3ODUsImV4cCI6MjA5MjAxMDc4NX0.eAtuPwCE2WH5ReV1cXaxah6c4hxdo2pjS8d62nWIKCo";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -36,6 +36,7 @@ const fmtDate = (dStr) => {
   return dStr;
 };
 
+// Working days logic
 const getWD = (mStr, yStr) => {
   if (!yStr) return 0;
   const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
@@ -47,6 +48,14 @@ const getWD = (mStr, yStr) => {
     if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
   }
   return count;
+};
+
+// Calendar days logic for exact prorated calculations
+const getCalendarDays = (mStr, yStr) => {
+  if (!yStr) return 30;
+  const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
+  const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mStr);
+  return new Date(y, mIdx + 1, 0).getDate();
 };
 
 const getEmptyAtt = () => {
@@ -250,13 +259,13 @@ export default function App() {
       }
 
       if (loadedEmps.length === 0) {
-        loadedEmps.push({ id: "admin", name: "System Admin", pwd: "admin123", status: "Active" });
+        loadedEmps.push({ id: "admin", name: "System Admin", pwd: "admin123", status: "Active", leave_policy: "Yes" });
       }
 
       const formattedEmps = loadedEmps.map((e) => ({
         id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
         phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
-        status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link, sec_q: e.sec_q, sec_a: e.sec_a,
+        status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link, sec_q: e.sec_q, sec_a: e.sec_a, leavePolicy: e.leave_policy || "Yes"
       }));
 
       const formattedPay = {};
@@ -294,7 +303,7 @@ export default function App() {
   const [pFy, setPFy] = useState("2025");
 
   const [showAddEmp, setShowAddEmp] = useState(false);
-  const [nE, setNE] = useState({ id: "", name: "", desig: "", pan: "", cat: "Onshore", basic: "", phone: "", email: "", pwd: "", start: "", end: "", status: "Active", bank: "", comments: "", driveLink: "" });
+  const [nE, setNE] = useState({ id: "", name: "", desig: "", pan: "", cat: "Onshore", basic: "", phone: "", email: "", pwd: "", start: "", end: "", status: "Active", bank: "", comments: "", driveLink: "", leavePolicy: "Yes" });
   const [editEmp, setEditEmp] = useState(null);
   const [editData, setEditData] = useState({});
 
@@ -424,13 +433,13 @@ export default function App() {
     await supabase.from("gits_employees").insert({
       id: newEmp.id, name: newEmp.name, desig: newEmp.desig, pan: newEmp.pan, cat: newEmp.cat, basic: newEmp.basic,
       phone: newEmp.phone, email: newEmp.email, pwd: newEmp.pwd, start_date: newEmp.start, end_date: newEmp.end,
-      status: newEmp.status, comments: newEmp.comments, bank: newEmp.bank, drive_link: newEmp.driveLink,
+      status: newEmp.status, comments: newEmp.comments, bank: newEmp.bank, drive_link: newEmp.driveLink, leave_policy: newEmp.leavePolicy
     });
     setEmps([...emps, newEmp]);
     setPay({ ...pay, [nE.id]: {} });
     setAtt({ ...att, [nE.id]: {} });
     setShowAddEmp(false);
-    setNE({ id: "", name: "", desig: "", pan: "", cat: "Onshore", basic: "", phone: "", email: "", pwd: "", start: "", end: "", status: "Active", bank: "", comments: "", driveLink: "" });
+    setNE({ id: "", name: "", desig: "", pan: "", cat: "Onshore", basic: "", phone: "", email: "", pwd: "", start: "", end: "", status: "Active", bank: "", comments: "", driveLink: "", leavePolicy: "Yes" });
   };
 
   const saveEditEmployee = async () => {
@@ -438,13 +447,14 @@ export default function App() {
     const payload = {
       phone: editData.phone, email: editData.email, start_date: editData.start, end_date: editData.end,
       status: editData.status, comments: combinedComments, bank: editData.bank, drive_link: editData.driveLink,
+      leave_policy: editData.leavePolicy
     };
     if (editData.adminForcePwd) payload.pwd = editData.adminForcePwd;
 
     await supabase.from("gits_employees").update(payload).eq("id", editEmp);
     setEmps((p) =>
       p.map((x) =>
-        x.id === editEmp ? { ...x, phone: editData.phone, email: editData.email, start: editData.start, end: editData.end, status: editData.status, comments: combinedComments, bank: editData.bank, driveLink: editData.driveLink, ...(editData.adminForcePwd ? { pwd: editData.adminForcePwd } : {}) } : x
+        x.id === editEmp ? { ...x, phone: editData.phone, email: editData.email, start: editData.start, end: editData.end, status: editData.status, comments: combinedComments, bank: editData.bank, driveLink: editData.driveLink, leavePolicy: editData.leavePolicy, ...(editData.adminForcePwd ? { pwd: editData.adminForcePwd } : {}) } : x
       )
     );
     setEditEmp(null);
@@ -501,12 +511,40 @@ export default function App() {
     return { basic: 0, hra: 0, conv: 800, med: 1500, inc: 0, oth: 0, lop: 0, adv: 0, pt: 200, tds: 0, othD: 0, note: "" };
   };
 
+  // --- AUTOMATED POLICY INTEGRATION (LEDGER) ---
   const openBulkPayroll = () => {
     const defaults = {};
     emps.filter((e) => e.status === "Active" && e.id !== "admin").forEach((emp) => {
       const l = getLastPay(emp.id);
       const a = att[emp.id]?.[fy]?.[mo];
-      defaults[emp.id] = { ...l, lop: a?.lop || 0 };
+      
+      const calDays = getCalendarDays(mo, fy);
+      const corePay = (l.basic || 0) + (l.hra || 0) + (l.conv || 0) + (l.med || 0);
+
+      // Auto-Calc LOP Amount (Based Strictly on Core Pay, Excluding Incentives)
+      const lopDays = Number(a?.lop || 0);
+      let lopAmt = 0;
+      if (lopDays > 0) {
+          lopAmt = Math.round((corePay / calDays) * lopDays);
+      }
+
+      // Auto-Calc Leave Encashment from comments
+      let encashAmt = 0;
+      let autoNote = "";
+      if (a?.comments && a.comments.toLowerCase().includes("encash")) {
+          const match = a.comments.match(/(\d+)\s*leave/i);
+          if (match) {
+              const eDays = Number(match[1]);
+              encashAmt = Math.round((corePay / calDays) * eDays);
+              autoNote = `${eDays} leaves encashed`;
+          }
+      }
+
+      if (lopDays > 0) {
+          autoNote = autoNote ? `${autoNote} | ${lopDays} days LOP` : `${lopDays} days LOP`;
+      }
+
+      defaults[emp.id] = { ...l, lop: lopAmt, oth: (l.oth || 0) + encashAmt, note: autoNote };
     });
     setBulkData(defaults);
     setShowBulk(true);
@@ -572,6 +610,76 @@ export default function App() {
     });
   };
 
+  // --- AUTOMATED POLICY ACCRUAL (UPDATED EXACT MATH WITH BYPASS) ---
+  const runLeaveAccrual = () => {
+    if (!confirm(`Auto-calculate Present Days, Balances, and LOP for ${mo} based on GITS Policy?`)) return;
+
+    const newAtt = { ...att };
+    emps.forEach(emp => {
+        if (emp.id === "admin" || emp.status !== "Active") return;
+
+        if(!newAtt[emp.id]) newAtt[emp.id] = {};
+        if(!newAtt[emp.id][fy]) newAtt[emp.id][fy] = getEmptyAtt();
+
+        let currentAtt = newAtt[emp.id][fy][mo] || {};
+        let currentLeaves = Number(currentAtt.leave || 0);
+        let currentHolidays = Number(currentAtt.holiday || 0);
+        const wDays = getWD(mo, fy);
+
+        // --- BYPASS FOR NON-LEAVE POLICY EMPLOYEES ---
+        if (emp.leavePolicy === "No") {
+            let newPresent = wDays - currentHolidays - currentLeaves;
+            if (newPresent < 0) newPresent = 0;
+            
+            newAtt[emp.id][fy][mo] = {
+                ...currentAtt,
+                present: newPresent,
+                bal: null,
+                lop: null
+            };
+            return;
+        }
+
+        // --- STANDARD ACCRUAL MATH ---
+        const mIdx = MS.indexOf(mo);
+        let prevMo = mIdx > 0 ? MS[mIdx - 1] : "Mar";
+        let prevFy = mIdx > 0 ? fy : String(parseInt(fy) - 1);
+
+        let prevBal = 0;
+        if (newAtt[emp.id]?.[prevFy]?.[prevMo]?.bal !== undefined && newAtt[emp.id]?.[prevFy]?.[prevMo]?.bal !== null) {
+            prevBal = Number(newAtt[emp.id][prevFy][prevMo].bal);
+        }
+
+        let accrual = 0;
+        if (["Jan", "Apr", "Jul"].includes(mo)) accrual = 1;
+        else if (mo === "Oct") accrual = 2;
+
+        let available = prevBal + accrual;
+        let newBal = 0;
+        let newLop = 0;
+
+        if (currentLeaves > available) {
+            newLop = currentLeaves - available;
+            newBal = 0;
+        } else {
+            newLop = 0;
+            newBal = available - currentLeaves; 
+        }
+
+        let newPresent = wDays - currentHolidays - currentLeaves;
+        if (newPresent < 0) newPresent = 0;
+
+        newAtt[emp.id][fy][mo] = {
+            ...currentAtt,
+            present: newPresent,
+            bal: newBal,
+            lop: newLop
+        };
+    });
+    setAtt(newAtt);
+    alert(`Attendance auto-calculated for ${mo}!\n- Present Days: (Work Days - Holidays - Leaves)\n- Balances & LOP updated based on policy limits.`);
+  };
+
   const saveAttendance = async () => {
     try {
       const { error: delErr } = await supabase.from("gits_attendance").delete().eq("fy", fy).eq("mo", mo);
@@ -597,14 +705,14 @@ export default function App() {
         const { error: insErr } = await supabase.from("gits_attendance").insert(inserts);
         if (insErr) throw insErr;
       }
-      alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Cloud!`);
+      alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Live Database!`);
     } catch (err) {
       console.error("Save error:", err);
       alert("Error saving attendance: " + err.message);
     }
   };
 
-  if (!dbLoaded) return <div style={{ padding: 50, textAlign: "center", fontFamily: "sans-serif" }}><h3>Connecting to Cloud Database...</h3></div>;
+  if (!dbLoaded) return <div style={{ padding: 50, textAlign: "center", fontFamily: "sans-serif" }}><h3>Connecting to Live Database...</h3></div>;
   if (slip) return <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column" }}><button style={{ padding: 15, background: "#1a1a2e", color: "#fff", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: 16 }} onClick={() => setSlip(null)}>✕ Close PDF Viewer</button><iframe srcDoc={slip} style={{ flex: 1, border: "none", background: "#fff" }} /></div>;
 
   if (!ses) return (
@@ -744,13 +852,42 @@ export default function App() {
                   <button style={{ ...btn, marginLeft: 10 }} onClick={() => setShowBulk(false)}>Cancel</button>
                 </div>
               </div>
+              
+              <div style={{background: "#e8f5e9", color: "#1D9E75", padding: "10px", borderRadius: 4, marginBottom: 15, fontSize: 12, fontWeight: "bold"}}>
+                  ✓ Dynamic LOP: LOP & Encashments auto-calculate purely on (Basic+HRA+Conv+Med). Incentives will not affect LOP.
+              </div>
+
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                   <thead><tr style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                    <th style={{ padding: 8 }}>S.No</th><th style={{ padding: 8 }}>Emp ID</th><th style={{ padding: 8 }}>Employee</th><th style={{ padding: 8 }}>Basic</th><th style={{ padding: 8 }}>HRA</th><th style={{ padding: 8 }}>Conv.</th><th style={{ padding: 8 }}>Med.</th><th style={{ padding: 8 }}>Inc.</th><th style={{ padding: 8 }}>Oth Earn</th><th style={{ padding: 8 }}>LOP</th><th style={{ padding: 8 }}>Advance</th><th style={{ padding: 8 }}>PT</th><th style={{ padding: 8 }}>TDS</th><th style={{ padding: 8 }}>Oth Ded.</th><th style={{ padding: 8 }}>Note</th><th style={{ padding: 8 }}>Taxable</th><th style={{ padding: 8 }}>Net</th>
+                    <th style={{ padding: 8 }}>S.No</th><th style={{ padding: 8 }}>Emp ID</th><th style={{ padding: 8 }}>Employee</th><th style={{ padding: 8 }}>Basic</th><th style={{ padding: 8 }}>HRA</th><th style={{ padding: 8 }}>Conv.</th><th style={{ padding: 8 }}>Med.</th><th style={{ padding: 8 }}>Inc.</th><th style={{ padding: 8 }}>Oth Earn</th><th style={{ padding: 8 }}>LOP (₹)</th><th style={{ padding: 8 }}>Advance</th><th style={{ padding: 8 }}>PT</th><th style={{ padding: 8 }}>TDS</th><th style={{ padding: 8 }}>Oth Ded.</th><th style={{ padding: 8 }}>Note</th><th style={{ padding: 8 }}>Taxable</th><th style={{ padding: 8 }}>Net</th>
                   </tr></thead>
                   <tbody>{Object.keys(bulkData).map((eid, idx) => {
-                    const d = bulkData[eid]; const upd = (k, v) => setBulkData({ ...bulkData, [eid]: { ...d, [k]: v } });
+                    const d = bulkData[eid]; 
+                    
+                    // NEW DYNAMIC UPDATE FUNCTION
+                    const upd = (k, v) => {
+                        const nextD = { ...d, [k]: v };
+                        // Only auto-recalculate LOP if a CORE salary component changes
+                        if (["basic", "hra", "conv", "med"].includes(k)) {
+                            const calDays = getCalendarDays(mo, fy);
+                            const corePay = (+nextD.basic || 0) + (+nextD.hra || 0) + (+nextD.conv || 0) + (+nextD.med || 0);
+                            const a = att[eid]?.[fy]?.[mo];
+                            
+                            const lopDays = Number(a?.lop || 0);
+                            if (lopDays > 0) nextD.lop = Math.round((corePay / calDays) * lopDays);
+                            
+                            if (a?.comments && a.comments.toLowerCase().includes("encash")) {
+                                const match = a.comments.match(/(\d+)\s*leave/i);
+                                if (match) {
+                                    const eDays = Number(match[1]);
+                                    nextD.oth = Math.round((corePay / calDays) * eDays);
+                                }
+                            }
+                        }
+                        setBulkData({ ...bulkData, [eid]: nextD });
+                    };
+
                     const bInp = { padding: "6px", border: "1px solid #ddd", borderRadius: 4, minWidth: 80, fontSize: 12 };
                     const g = (+d.basic || 0) + (+d.hra || 0) + (+d.conv || 0) + (+d.med || 0) + (+d.inc || 0) + (+d.oth || 0);
                     const ded = (+d.lop || 0) + (+d.adv || 0) + (+d.pt || 0) + (+d.tds || 0) + (+d.othD || 0);
@@ -764,8 +901,8 @@ export default function App() {
                         <td><input style={bInp} type="number" value={d.conv} onChange={(e) => upd("conv", e.target.value)} /></td>
                         <td><input style={bInp} type="number" value={d.med} onChange={(e) => upd("med", e.target.value)} /></td>
                         <td><input style={bInp} type="number" value={d.inc} onChange={(e) => upd("inc", e.target.value)} /></td>
-                        <td><input style={bInp} type="number" value={d.oth} onChange={(e) => upd("oth", e.target.value)} /></td>
-                        <td><input style={bInp} type="number" value={d.lop} onChange={(e) => upd("lop", e.target.value)} /></td>
+                        <td><input style={{...bInp, background: d.oth > 0 ? "#fff8e1" : "#fff"}} type="number" value={d.oth} onChange={(e) => upd("oth", e.target.value)} /></td>
+                        <td><input style={{...bInp, background: d.lop > 0 ? "#ffebee" : "#fff"}} type="number" value={d.lop} onChange={(e) => upd("lop", e.target.value)} /></td>
                         <td><input style={bInp} type="number" value={d.adv} onChange={(e) => upd("adv", e.target.value)} /></td>
                         <td><input style={bInp} type="number" value={d.pt} onChange={(e) => upd("pt", e.target.value)} /></td>
                         <td><input style={bInp} type="number" value={d.tds} onChange={(e) => upd("tds", e.target.value)} /></td>
@@ -820,9 +957,9 @@ export default function App() {
         <div>
           <div style={{ marginBottom: 15, display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button style={{ ...btn, background: "#1D9E75", color: "#fff" }} onClick={() => {
-              const rows = [["S.No", "Emp ID", "Name", "Designation", "Email", "Phone", "Start Date", "End Date", "Status", "PAN", "Category", "Basic Salary", "Bank Details", "Comments", "Drive Link"]];
+              const rows = [["S.No", "Emp ID", "Name", "Designation", "Email", "Phone", "Start Date", "End Date", "Status", "PAN", "Category", "Basic Salary", "Bank Details", "Comments", "Drive Link", "Leave Policy"]];
               let sno = 1;
-              emps.filter((e) => e.id !== "admin").forEach((e) => rows.push([sno++, e.id, e.name, e.desig, e.email, e.phone, e.start || "", e.end || "", e.status, e.pan, e.cat, e.basic, e.bank, e.comments || "", e.driveLink || ""]));
+              emps.filter((e) => e.id !== "admin").forEach((e) => rows.push([sno++, e.id, e.name, e.desig, e.email, e.phone, e.start || "", e.end || "", e.status, e.pan, e.cat, e.basic, e.bank, e.comments || "", e.driveLink || "", e.leavePolicy || "Yes"]));
               exportCSV(rows, `Employees_${fyL(fy)}.csv`);
             }}>Download Excel</button>
             <button style={{ ...btn, background: "#1a1a2e", color: "#fff" }} onClick={() => setShowAddEmp(!showAddEmp)}>+ Add Employee</button>
@@ -835,6 +972,7 @@ export default function App() {
                 <div><label style={lbl}>Name</label><input style={sInp} value={nE.name} onChange={(e) => setNE({ ...nE, name: e.target.value })} /></div>
                 <div><label style={lbl}>Designation</label><input style={sInp} value={nE.desig} onChange={(e) => setNE({ ...nE, desig: e.target.value })} /></div>
                 <div><label style={lbl}>Gross Basic Salary</label><input style={sInp} type="number" value={nE.basic} onChange={(e) => setNE({ ...nE, basic: e.target.value })} /></div>
+                <div><label style={lbl}>Leave Policy Apply</label><select style={sInp} value={nE.leavePolicy} onChange={(e) => setNE({ ...nE, leavePolicy: e.target.value })}><option>Yes</option><option>No</option></select></div>
                 <div><label style={lbl}>Phone</label><input style={sInp} value={nE.phone} onChange={(e) => setNE({ ...nE, phone: e.target.value })} /></div>
                 <div><label style={lbl}>Email</label><input style={sInp} value={nE.email} onChange={(e) => setNE({ ...nE, email: e.target.value })} /></div>
                 <div><label style={lbl}>Start Date</label><input style={sInp} type="date" value={nE.start} onChange={(e) => setNE({ ...nE, start: e.target.value })} /></div>
@@ -854,6 +992,7 @@ export default function App() {
                 <div><label style={lbl}>Drive Link</label><input style={sInp} value={editData.driveLink || ""} onChange={(e) => setEditData({ ...editData, driveLink: e.target.value })} /></div>
                 <div><label style={lbl}>Start Date</label><input style={sInp} type="date" value={editData.start || ""} onChange={(e) => setEditData({ ...editData, start: e.target.value })} /></div>
                 <div><label style={lbl}>End Date</label><input style={sInp} type="date" value={editData.end || ""} onChange={(e) => setEditData({ ...editData, end: e.target.value })} /></div>
+                <div><label style={lbl}>Leave Policy Apply</label><select style={sInp} value={editData.leavePolicy || "Yes"} onChange={(e) => setEditData({ ...editData, leavePolicy: e.target.value })}><option>Yes</option><option>No</option></select></div>
                 <div><label style={lbl}>Status</label><select style={sInp} value={editData.status || "Active"} onChange={(e) => setEditData({ ...editData, status: e.target.value })}><option>Active</option><option>Resigned</option><option>Terminated</option></select></div>
                 {editData.end && <div><label style={lbl}>Reason for leaving</label><input style={sInp} value={editData.reason || ""} onChange={(e) => setEditData({ ...editData, reason: e.target.value })} /></div>}
                 <div style={{ borderLeft: "3px solid #D85A30", paddingLeft: 10 }}>
@@ -872,7 +1011,7 @@ export default function App() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
                 <tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}>
-                  <th style={thS}>Sl.No</th><th style={thS}>Employee ID</th><th style={thS}>Employee Name</th><th style={thS}>Email ID</th><th style={thS}>Phone Number</th><th style={thS}>Start Date</th><th style={thS}>End Date</th><th style={thS}>Status</th><th style={thS}>Bank Account</th><th style={thS}>Drive Link</th><th style={thS}>Action</th>
+                  <th style={thS}>Sl.No</th><th style={thS}>Employee ID</th><th style={thS}>Employee Name</th><th style={thS}>Leave Policy</th><th style={thS}>Email ID</th><th style={thS}>Phone Number</th><th style={thS}>Start Date</th><th style={thS}>End Date</th><th style={thS}>Status</th><th style={thS}>Bank Account</th><th style={thS}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -881,6 +1020,11 @@ export default function App() {
                     <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
                     <td style={tdS}>{e.id}</td>
                     <td style={tdS}><b>{e.name}</b><br /><small style={{ color: "#888" }}>{e.desig}</small></td>
+                    <td style={tdS}>
+                        <span style={{ padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: "bold", background: e.leavePolicy === "Yes" ? "#e8f5e9" : "#fff8e1", color: e.leavePolicy === "Yes" ? "#1D9E75" : "#f57c00" }}>
+                          {e.leavePolicy || "Yes"}
+                        </span>
+                    </td>
                     <td style={tdS}>{e.email || "-"}</td>
                     <td style={tdS}>{e.phone || "-"}</td>
                     <td style={tdS}>{fmtDate(e.start)}</td>
@@ -891,7 +1035,6 @@ export default function App() {
                       </span>
                     </td>
                     <td style={tdS}>{e.bank || "-"}</td>
-                    <td style={tdS}>{e.driveLink ? <a href={e.driveLink} target="_blank" rel="noreferrer" style={{ color: "#185FA5" }}>Link</a> : "-"}</td>
                     <td style={tdS}>
                       <div style={{ display: "flex", gap: 5 }}>
                         <button style={{ ...btn, padding: "4px 8px" }} onClick={() => { setEditEmp(e.id); setEditData({ ...e }); }}>Edit</button>
@@ -910,13 +1053,20 @@ export default function App() {
       {tab === "attendance" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 20, alignItems: "center" }}>
-            <select value={mo} onChange={(e) => setMo(e.target.value)} style={{ ...sInp, width: 150 }}>{MS.map((m) => (<option key={m} value={m}>{mL(m, fy)}</option>))}</select>
-            {ses.role === "a" && <button style={{ ...btn, background: "#1a1a2e", color: "#fff", margin: 0 }} onClick={saveAttendance}>Save Attendance</button>}
+             <select value={mo} onChange={(e) => setMo(e.target.value)} style={{ ...sInp, width: 150 }}>{MS.map((m) => (<option key={m} value={m}>{mL(m, fy)}</option>))}</select>
+             
+             {ses.role === "a" && <button style={{ ...btn, background: "#8e44ad", color: "#fff", margin: 0, marginRight: 10 }} onClick={runLeaveAccrual}>⚡ Auto-Calc (Present, LOP, Bal)</button>}
+             
+             {ses.role === "a" && <button style={{ ...btn, background: "#1a1a2e", color: "#fff", margin: 0 }} onClick={saveAttendance}>Save Attendance</button>}
+          </div>
+
+          <div style={{background: "#f3e5f5", color: "#8e44ad", padding: "10px", borderRadius: 4, marginBottom: 15, fontSize: 12, fontWeight: "bold"}}>
+              ✓ Enter Holidays & Leaves, then click 'Auto-Calc' to instantly generate Present Days, Balances, and LOP based on policy!
           </div>
 
           <div style={{ ...card, padding: 0, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP</th><th>Comments</th></tr></thead>
+              <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP (Days)</th><th>Comments</th></tr></thead>
               <tbody>{emps.filter((e) => ses.role === "a" ? (e.status === "Active" && e.id !== "admin") : e.id === ses.id).map((e, idx) => {
                 const a = att[e.id]?.[fy]?.[mo] || {};
                 const wDays = getWD(mo, fy);
@@ -927,9 +1077,9 @@ export default function App() {
                     <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.present !== undefined && a.present !== null ? a.present : ""} onChange={(x) => updAtt(e.id, mo, "present", x.target.value)} /></td>
                     <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.holiday !== undefined && a.holiday !== null ? a.holiday : ""} onChange={(x) => updAtt(e.id, mo, "holiday", x.target.value)} /></td>
                     <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.leave !== undefined && a.leave !== null ? a.leave : ""} onChange={(x) => updAtt(e.id, mo, "leave", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.bal !== undefined && a.bal !== null ? a.bal : ""} onChange={(x) => updAtt(e.id, mo, "bal", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.lop !== undefined && a.lop !== null ? a.lop : ""} onChange={(x) => updAtt(e.id, mo, "lop", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 120 }} disabled={ses.role !== "a"} value={a.comments || ""} onChange={(x) => updAtt(e.id, mo, "comments", x.target.value)} /></td>
+                    <td><input style={{ ...sInp, minWidth: 60, background: "#f8f9fa" }} disabled={ses.role !== "a"} type="number" value={a.bal !== undefined && a.bal !== null ? a.bal : ""} onChange={(x) => updAtt(e.id, mo, "bal", x.target.value)} /></td>
+                    <td><input style={{ ...sInp, minWidth: 60, background: "#ffebee" }} disabled={ses.role !== "a"} type="number" value={a.lop !== undefined && a.lop !== null ? a.lop : ""} onChange={(x) => updAtt(e.id, mo, "lop", x.target.value)} /></td>
+                    <td><input style={{ ...sInp, minWidth: 120 }} disabled={ses.role !== "a"} placeholder="e.g., 2 leaves encashed" value={a.comments || ""} onChange={(x) => updAtt(e.id, mo, "comments", x.target.value)} /></td>
                   </tr>
                 );
               })}</tbody>
@@ -1019,11 +1169,54 @@ export default function App() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginBottom: 15 }}>
                 <div><label style={lbl}>Employee</label><select style={sInp} value={pEmp} disabled={!!editLedger} onChange={(e) => {
                   const id = e.target.value; setPEmp(id);
-                  if (id) { const l = getLastPay(id); setNEn((prev) => ({ ...prev, basic: l.basic, hra: l.hra, conv: l.conv, med: l.med, pt: l.pt, tds: l.tds })); }
+                  if (id) { 
+                    const l = getLastPay(id); 
+                    const a = att[id]?.[fy]?.[nEn.m];
+                    
+                    const calDays = getCalendarDays(nEn.m, fy);
+                    const corePay = (l.basic || 0) + (l.hra || 0) + (l.conv || 0) + (l.med || 0);
+                    const lopDays = Number(a?.lop || 0);
+                    let lopAmt = lopDays > 0 ? Math.round((corePay / calDays) * lopDays) : 0;
+                    
+                    let encashAmt = 0;
+                    let autoNote = "";
+                    if (a?.comments && a.comments.toLowerCase().includes("encash")) {
+                        const match = a.comments.match(/(\d+)\s*leave/i);
+                        if (match) {
+                            const eDays = Number(match[1]);
+                            encashAmt = Math.round((corePay / calDays) * eDays);
+                            autoNote = `${eDays} leaves encashed`;
+                        }
+                    }
+                    if (lopDays > 0) {
+                        autoNote = autoNote ? `${autoNote} | ${lopDays} days LOP` : `${lopDays} days LOP`;
+                    }
+
+                    setNEn((prev) => ({ ...prev, basic: l.basic, hra: l.hra, conv: l.conv, med: l.med, pt: l.pt, tds: l.tds, lop: lopAmt, oth: encashAmt, note: autoNote })); 
+                  }
                 }}><option value="">Select...</option>{emps.filter((e) => e.id !== "admin").map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}</select></div>
                 <div><label style={lbl}>Month</label><select style={sInp} value={nEn.m} onChange={(e) => setNEn({ ...nEn, m: e.target.value })}>{MS.map((m) => (<option key={m} value={m}>{mL(m, fy)}</option>))}</select></div>
                 <div><label style={lbl}>Type</label><select style={sInp} value={nEn.t} onChange={(e) => setNEn({ ...nEn, t: e.target.value })}><option value="s">Salary</option><option value="i">Incentive</option></select></div>
-                {[["Basic", "basic"], ["HRA", "hra"], ["Conv", "conv"], ["Med", "med"], ["Incentive", "inc"], ["Other Earn", "oth"], ["LOP", "lop"], ["Advance", "adv"], ["PT", "pt"], ["TDS", "tds"], ["Other Ded", "othD"]].map(([l, k]) => (<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={(e) => setNEn({ ...nEn, [k]: e.target.value })} /></div>))}
+                {[["Basic", "basic"], ["HRA", "hra"], ["Conv", "conv"], ["Med", "med"], ["Incentive", "inc"], ["Other Earn", "oth"], ["LOP (₹)", "lop"], ["Advance", "adv"], ["PT", "pt"], ["TDS", "tds"], ["Other Ded", "othD"]].map(([l, k]) => (<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={(e) => {
+                    const v = e.target.value;
+                    const nextEn = { ...nEn, [k]: v };
+                    // Auto-recalculate LOP if CORE salary component is manually edited
+                    if (["basic", "hra", "conv", "med"].includes(k) && pEmp) {
+                        const calDays = getCalendarDays(nextEn.m, fy);
+                        const corePay = (+nextEn.basic || 0) + (+nextEn.hra || 0) + (+nextEn.conv || 0) + (+nextEn.med || 0);
+                        const a = att[pEmp]?.[fy]?.[nextEn.m];
+                        const lopDays = Number(a?.lop || 0);
+                        if (lopDays > 0) nextEn.lop = Math.round((corePay / calDays) * lopDays);
+                        if (a?.comments && a.comments.toLowerCase().includes("encash")) {
+                            const match = a.comments.match(/(\d+)\s*leave/i);
+                            if (match) {
+                                const eDays = Number(match[1]);
+                                nextEn.oth = Math.round((corePay / calDays) * eDays);
+                            }
+                        }
+                    }
+                    setNEn(nextEn);
+                }} /></div>))}
                 <div style={{ gridColumn: "1/-1" }}><label style={lbl}>Note / Comments</label><input style={sInp} value={nEn.note} placeholder="Optional reason for entry" onChange={(e) => setNEn({ ...nEn, note: e.target.value })} /></div>
               </div>
               <button style={{ ...btn, background: "green", color: "#fff" }} onClick={addLedgerEntry}>{editLedger ? "Update Entry" : "Save Entry"}</button><button style={{ ...btn, marginLeft: 10 }} onClick={() => { setShowAddEntry(false); setEditLedger(null); }}>Cancel</button>
