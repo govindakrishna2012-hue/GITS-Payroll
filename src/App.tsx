@@ -36,6 +36,23 @@ const fmtDate = (dStr) => {
   return dStr;
 };
 
+// Advanced Visibility Filter for Resigned Employees
+const isActiveInMonth = (emp, mStr, yStr) => {
+  if (emp.id === "admin") return false;
+
+  const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
+  const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mStr);
+  
+  const mStart = `${y}-${String(mIdx + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(y, mIdx + 1, 0).getDate();
+  const mEnd = `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  if (emp.start && emp.start > mEnd) return false; 
+  if (emp.end && emp.end < mStart) return false;   
+
+  return true;
+};
+
 // Working days logic
 const getWD = (mStr, yStr) => {
   if (!yStr) return 0;
@@ -50,7 +67,7 @@ const getWD = (mStr, yStr) => {
   return count;
 };
 
-// Calendar days logic for exact prorated calculations
+// Calendar days logic for exact prorated calculations (LOP)
 const getCalendarDays = (mStr, yStr) => {
   if (!yStr) return 30;
   const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
@@ -514,28 +531,27 @@ export default function App() {
   // --- AUTOMATED POLICY INTEGRATION (LEDGER) ---
   const openBulkPayroll = () => {
     const defaults = {};
-    emps.filter((e) => e.status === "Active" && e.id !== "admin").forEach((emp) => {
+    emps.filter((e) => isActiveInMonth(e, mo, fy) && e.id !== "admin").forEach((emp) => {
       const l = getLastPay(emp.id);
       const a = att[emp.id]?.[fy]?.[mo];
       
       const calDays = getCalendarDays(mo, fy);
       const corePay = (l.basic || 0) + (l.hra || 0) + (l.conv || 0) + (l.med || 0);
 
-      // Auto-Calc LOP Amount (Based Strictly on Core Pay, Excluding Incentives)
       const lopDays = Number(a?.lop || 0);
       let lopAmt = 0;
       if (lopDays > 0) {
           lopAmt = Math.round((corePay / calDays) * lopDays);
       }
 
-      // Auto-Calc Leave Encashment from comments
+      // Auto-Calc Leave Encashment from comments (Strictly uses /30 per policy)
       let encashAmt = 0;
       let autoNote = "";
       if (a?.comments && a.comments.toLowerCase().includes("encash")) {
           const match = a.comments.match(/(\d+)\s*leave/i);
           if (match) {
               const eDays = Number(match[1]);
-              encashAmt = Math.round((corePay / calDays) * eDays);
+              encashAmt = Math.round((corePay / 30) * eDays); 
               autoNote = `${eDays} leaves encashed`;
           }
       }
@@ -610,13 +626,34 @@ export default function App() {
     });
   };
 
-  // --- AUTOMATED POLICY ACCRUAL (UPDATED EXACT MATH WITH BYPASS) ---
+  // --- CARRY-OVER MATH ---
+  const getCarryOver = (eid) => {
+    if (!["Jan", "Feb", "Mar"].includes(mo)) return 0;
+    const decBal = Number(att[eid]?.[fy]?.["Dec"]?.bal || 0);
+    if (decBal <= 0) return 0;
+
+    let encashedSoFar = 0;
+    if (mo === "Feb" || mo === "Mar") {
+        const jC = att[eid]?.[fy]?.["Jan"]?.comments || "";
+        const match = jC.match(/(\d+)\s*leave.*encash/i);
+        if (match) encashedSoFar += Number(match[1]);
+    }
+    if (mo === "Mar") {
+        const fC = att[eid]?.[fy]?.["Feb"]?.comments || "";
+        const match = fC.match(/(\d+)\s*leave.*encash/i);
+        if (match) encashedSoFar += Number(match[1]);
+    }
+    const remaining = decBal - encashedSoFar;
+    return remaining > 0 ? remaining : 0;
+  };
+
+  // --- AUTOMATED POLICY ACCRUAL ---
   const runLeaveAccrual = () => {
-    if (!confirm(`Auto-calculate Present Days, Balances, and LOP for ${mo} based on GITS Policy?`)) return;
+    if (!confirm(`Auto-calculate Present Days, Balances, Encashments, and LOP for ${mo} based on GITS Policy?`)) return;
 
     const newAtt = { ...att };
     emps.forEach(emp => {
-        if (emp.id === "admin" || emp.status !== "Active") return;
+        if (!isActiveInMonth(emp, mo, fy)) return;
 
         if(!newAtt[emp.id]) newAtt[emp.id] = {};
         if(!newAtt[emp.id][fy]) newAtt[emp.id][fy] = getEmptyAtt();
@@ -626,21 +663,16 @@ export default function App() {
         let currentHolidays = Number(currentAtt.holiday || 0);
         const wDays = getWD(mo, fy);
 
-        // --- BYPASS FOR NON-LEAVE POLICY EMPLOYEES ---
+        // BYPASS FOR NON-LEAVE POLICY EMPLOYEES
         if (emp.leavePolicy === "No") {
             let newPresent = wDays - currentHolidays - currentLeaves;
             if (newPresent < 0) newPresent = 0;
             
-            newAtt[emp.id][fy][mo] = {
-                ...currentAtt,
-                present: newPresent,
-                bal: null,
-                lop: null
-            };
+            newAtt[emp.id][fy][mo] = { ...currentAtt, present: newPresent, bal: null, lop: null };
             return;
         }
 
-        // --- STANDARD ACCRUAL MATH ---
+        // STANDARD ACCRUAL MATH
         const mIdx = MS.indexOf(mo);
         let prevMo = mIdx > 0 ? MS[mIdx - 1] : "Mar";
         let prevFy = mIdx > 0 ? fy : String(parseInt(fy) - 1);
@@ -658,12 +690,33 @@ export default function App() {
         let newBal = 0;
         let newLop = 0;
 
+        // 1. Deduct Leaves Taken First
         if (currentLeaves > available) {
             newLop = currentLeaves - available;
-            newBal = 0;
+            available = 0;
         } else {
             newLop = 0;
-            newBal = available - currentLeaves; 
+            available -= currentLeaves; 
+        }
+
+        // 2. Deduct Encashments (Strictly limit to available balance)
+        let comments = currentAtt.comments || "";
+        if (comments.toLowerCase().includes("encash")) {
+            const match = comments.match(/(\d+)\s*leave/i);
+            if (match) {
+                const requestedEncash = Number(match[1]);
+                if (requestedEncash > 0) {
+                    const actualEncash = Math.min(requestedEncash, available);
+                    available -= actualEncash;
+                    
+                    if (actualEncash > 0) {
+                        comments = comments.replace(new RegExp(`${requestedEncash}\\s*leave`, "i"), `${actualEncash} leave`);
+                    } else {
+                        comments = comments.replace(/\d+\s*leaves?\s*encashed/i, "").trim();
+                        comments = comments.replace(/^\|\s*|\s*\|\s*$/g, "").trim();
+                    }
+                }
+            }
         }
 
         let newPresent = wDays - currentHolidays - currentLeaves;
@@ -672,12 +725,13 @@ export default function App() {
         newAtt[emp.id][fy][mo] = {
             ...currentAtt,
             present: newPresent,
-            bal: newBal,
-            lop: newLop
+            bal: available, 
+            lop: newLop,
+            comments: comments
         };
     });
     setAtt(newAtt);
-    alert(`Attendance auto-calculated for ${mo}!\n- Present Days: (Work Days - Holidays - Leaves)\n- Balances & LOP updated based on policy limits.`);
+    alert(`Attendance auto-calculated for ${mo}!\n- Present Days updated\n- Balances drained for leaves/encashment\n- LOP applied if deficit.`);
   };
 
   const saveAttendance = async () => {
@@ -705,14 +759,14 @@ export default function App() {
         const { error: insErr } = await supabase.from("gits_attendance").insert(inserts);
         if (insErr) throw insErr;
       }
-      alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Live Database!`);
+      alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Cloud!`);
     } catch (err) {
       console.error("Save error:", err);
       alert("Error saving attendance: " + err.message);
     }
   };
 
-  if (!dbLoaded) return <div style={{ padding: 50, textAlign: "center", fontFamily: "sans-serif" }}><h3>Connecting to Live Database...</h3></div>;
+  if (!dbLoaded) return <div style={{ padding: 50, textAlign: "center", fontFamily: "sans-serif" }}><h3>Connecting to Cloud Database...</h3></div>;
   if (slip) return <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column" }}><button style={{ padding: 15, background: "#1a1a2e", color: "#fff", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: 16 }} onClick={() => setSlip(null)}>✕ Close PDF Viewer</button><iframe srcDoc={slip} style={{ flex: 1, border: "none", background: "#fff" }} /></div>;
 
   if (!ses) return (
@@ -831,14 +885,14 @@ export default function App() {
                 <button style={{ ...btn, background: "#1D9E75", color: "#fff" }} onClick={() => {
                   const rows = [["S.No", "Emp ID", "Employee", "Role", "Basic", "HRA", "Conv", "Med", "Inc", "Oth Earn", "Gross", "LOP", "Advance", "PT", "TDS", "Oth Ded", "Total Deductions", "Taxable Income", "Net", "Note"]];
                   let sno = 1;
-                  emps.filter((e) => e.id !== "admin").forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, e.desig, r.basic, r.hra, r.conv, r.med, r.inc, r.oth, gr(r), r.lop, r.adv, r.pt, r.tds, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""])));
+                  emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, e.desig, r.basic, r.hra, r.conv, r.med, r.inc, r.oth, gr(r), r.lop, r.adv, r.pt, r.tds, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""])));
                   exportCSV(rows, `Payroll_${mL(mo, fy)}.csv`);
                 }}>Export CSV</button>
               </div>
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 20, textAlign: "center", marginBottom: 20 }}>
-            <div style={card}><div style={lbl}>{ses.role === "a" ? "Total Staff" : "My Salary"}</div><div style={{ fontSize: 24, fontWeight: "bold" }}>{ses.role === "a" ? emps.filter((e) => e.id !== "admin").length : f$(myE?.basic)}</div></div>
+            <div style={card}><div style={lbl}>{ses.role === "a" ? "Total Staff" : "My Salary"}</div><div style={{ fontSize: 24, fontWeight: "bold" }}>{ses.role === "a" ? emps.filter((e) => isActiveInMonth(e, mo, fy)).length : f$(myE?.basic)}</div></div>
             <div style={card}><div style={lbl}>{ses.role === "a" ? "Gross Month" : "My YTD Gross"}</div><div style={{ fontSize: 24, fontWeight: "bold" }}>{ses.role === "a" ? f$(dTot.g) : f$((pay[myE?.id]?.[fy] || []).reduce((s, r) => s + gr(r), 0))}</div></div>
             <div style={card}><div style={lbl}>Deductions</div><div style={{ fontSize: 24, fontWeight: "bold", color: "#D85A30" }}>{f$(dTot.d)}</div></div>
             <div style={card}><div style={lbl}>Net Amount</div><div style={{ fontSize: 24, fontWeight: "bold", color: "#1D9E75" }}>{f$(dTot.n)}</div></div>
@@ -854,7 +908,7 @@ export default function App() {
               </div>
               
               <div style={{background: "#e8f5e9", color: "#1D9E75", padding: "10px", borderRadius: 4, marginBottom: 15, fontSize: 12, fontWeight: "bold"}}>
-                  ✓ Dynamic LOP: LOP & Encashments auto-calculate purely on (Basic+HRA+Conv+Med). Incentives will not affect LOP.
+                  ✓ Dynamic LOP: LOP auto-calculates purely on (Basic+HRA+Conv+Med). Incentives will not affect LOP. Encashments use flat 30 days.
               </div>
 
               <div style={{ overflowX: "auto" }}>
@@ -865,10 +919,8 @@ export default function App() {
                   <tbody>{Object.keys(bulkData).map((eid, idx) => {
                     const d = bulkData[eid]; 
                     
-                    // NEW DYNAMIC UPDATE FUNCTION
                     const upd = (k, v) => {
                         const nextD = { ...d, [k]: v };
-                        // Only auto-recalculate LOP if a CORE salary component changes
                         if (["basic", "hra", "conv", "med"].includes(k)) {
                             const calDays = getCalendarDays(mo, fy);
                             const corePay = (+nextD.basic || 0) + (+nextD.hra || 0) + (+nextD.conv || 0) + (+nextD.med || 0);
@@ -881,7 +933,7 @@ export default function App() {
                                 const match = a.comments.match(/(\d+)\s*leave/i);
                                 if (match) {
                                     const eDays = Number(match[1]);
-                                    nextD.oth = Math.round((corePay / calDays) * eDays);
+                                    nextD.oth = Math.round((corePay / 30) * eDays); // Fixed to 30 days
                                 }
                             }
                         }
@@ -925,7 +977,7 @@ export default function App() {
                   const id = e.target.value;
                   if (id) setOffCycleData({ empId: id, basic: 0, hra: 0, conv: 0, med: 0, inc: 0, oth: 0, lop: 0, adv: 0, pt: 0, tds: 0, othD: 0, note: "Off-Cycle Arrears/Adj" });
                   else setOffCycleData({ empId: "", basic: 0, hra: 0, conv: 0, med: 0, inc: 0, oth: 0, lop: 0, adv: 0, pt: 0, tds: 0, othD: 0, note: "" });
-                }}><option value="">Select...</option>{emps.filter((e) => e.status === "Active" && e.id !== "admin").map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}</select></div>
+                }}><option value="">Select...</option>{emps.filter((e) => isActiveInMonth(e, mo, fy)).map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}</select></div>
                 {[["Basic", "basic"], ["HRA", "hra"], ["Conv", "conv"], ["Med", "med"], ["Incentive", "inc"], ["Oth Earn", "oth"], ["LOP", "lop"], ["Advance", "adv"], ["PT", "pt"], ["TDS", "tds"], ["Oth Ded", "othD"]].map(([l, k]) => (<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={offCycleData[k]} onChange={(e) => setOffCycleData({ ...offCycleData, [k]: e.target.value })} /></div>))}
                 <div style={{ gridColumn: "1/-1" }}><label style={lbl}>Note / Reason</label><input style={sInp} value={offCycleData.note} placeholder="e.g. Arrears" onChange={(e) => setOffCycleData({ ...offCycleData, note: e.target.value })} /></div>
               </div>
@@ -938,7 +990,7 @@ export default function App() {
               <thead><tr style={{ background: "#f8f9fa", textAlign: "left", whiteSpace: "nowrap" }}>
                 <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Role</th><th style={thS}>Basic</th><th style={thS}>HRA</th><th style={thS}>Conv</th><th style={thS}>Med</th><th style={thS}>Inc</th><th style={thS}>Oth Earn</th><th style={thS}>Gross</th><th style={thS}>LOP</th><th style={thS}>Adv</th><th style={thS}>PT</th><th style={thS}>TDS</th><th style={thS}>Oth Ded</th><th style={thS}>Tot. Ded</th><th style={thS}>Taxable</th><th style={thS}>Net</th><th style={thS}>Note</th><th style={thS}>Payslip</th>
               </tr></thead>
-              <tbody>{emps.filter((e) => ses.role === "a" ? e.id !== "admin" : e.id === ses.id).map((emp, idx) => {
+              <tbody>{emps.filter((e) => ses.role === "a" ? isActiveInMonth(e, mo, fy) : e.id === ses.id).map((emp, idx) => {
                 const rows = (pay[emp.id]?.[fy] || []).filter((r) => r.m === mo);
                 if (!rows.length) return <tr key={emp.id}><td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{ ...tdS, color: "#888" }}>{emp.desig}</td><td colSpan={17} style={{ ...tdS, color: "#888", textAlign: "center" }}>No entry</td></tr>;
                 return rows.map((r, i) => (
@@ -1067,9 +1119,15 @@ export default function App() {
           <div style={{ ...card, padding: 0, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP (Days)</th><th>Comments</th></tr></thead>
-              <tbody>{emps.filter((e) => ses.role === "a" ? (e.status === "Active" && e.id !== "admin") : e.id === ses.id).map((e, idx) => {
+              <tbody>{emps.filter((e) => ses.role === "a" ? isActiveInMonth(e, mo, fy) : e.id === ses.id).map((e, idx) => {
                 const a = att[e.id]?.[fy]?.[mo] || {};
                 const wDays = getWD(mo, fy);
+                
+                const carryOver = getCarryOver(e.id);
+                const isEncashMonth = ["Jan", "Feb", "Mar"].includes(mo);
+                const hasEncash = a.comments?.toLowerCase().includes("encash");
+                const pureComment = a.comments ? a.comments.replace(/\d+\s*leaves?\s*encashed\s*\|?\s*/i, '').replace(/^\|\s*/, '').trim() : "";
+
                 return (
                   <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{e.id}</td><td style={tdS}>{e.name}</td>
@@ -1079,7 +1137,53 @@ export default function App() {
                     <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.leave !== undefined && a.leave !== null ? a.leave : ""} onChange={(x) => updAtt(e.id, mo, "leave", x.target.value)} /></td>
                     <td><input style={{ ...sInp, minWidth: 60, background: "#f8f9fa" }} disabled={ses.role !== "a"} type="number" value={a.bal !== undefined && a.bal !== null ? a.bal : ""} onChange={(x) => updAtt(e.id, mo, "bal", x.target.value)} /></td>
                     <td><input style={{ ...sInp, minWidth: 60, background: "#ffebee" }} disabled={ses.role !== "a"} type="number" value={a.lop !== undefined && a.lop !== null ? a.lop : ""} onChange={(x) => updAtt(e.id, mo, "lop", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 120 }} disabled={ses.role !== "a"} placeholder="e.g., 2 leaves encashed" value={a.comments || ""} onChange={(x) => updAtt(e.id, mo, "comments", x.target.value)} /></td>
+                    
+                    <td style={{minWidth: 200}}>
+                      {isEncashMonth && carryOver > 0 && ses.role === "a" && (
+                        <div style={{ background: "#fff8e1", padding: "4px 8px", borderRadius: 4, marginBottom: 5, border: "1px solid #ffc107" }}>
+                          <div style={{ fontSize: 10, fontWeight: "bold", marginBottom: 3, color: "#f57c00" }}>Leave Encash (Max: {carryOver})</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                            <select 
+                              style={{ padding: 2, fontSize: 11, borderRadius: 3, border: "1px solid #ccc" }}
+                              value={hasEncash ? "Yes" : "No"}
+                              onChange={(evt) => {
+                                if (evt.target.value === "Yes") {
+                                  const newC = pureComment ? `${carryOver} leaves encashed | ${pureComment}` : `${carryOver} leaves encashed`;
+                                  updAtt(e.id, mo, "comments", newC);
+                                } else {
+                                  updAtt(e.id, mo, "comments", pureComment);
+                                }
+                              }}
+                            >
+                              <option>No</option>
+                              <option>Yes</option>
+                            </select>
+                            {hasEncash && (
+                              <input 
+                                type="number" 
+                                style={{ padding: 2, fontSize: 11, borderRadius: 3, border: "1px solid #ccc", width: 40 }}
+                                max={carryOver}
+                                min={0}
+                                value={a.comments?.match(/(\d+)\s*leave/i)?.[1] || ""}
+                                onChange={(evt) => {
+                                  let v = Number(evt.target.value);
+                                  if (v > carryOver) v = carryOver;
+                                  if (v < 0) v = 0;
+                                  const newC = pureComment ? `${v} leaves encashed | ${pureComment}` : `${v} leaves encashed`;
+                                  updAtt(e.id, mo, "comments", newC);
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <input style={{ ...sInp, width: "100%" }} disabled={ses.role !== "a"} placeholder="General Comments" value={pureComment} onChange={(x) => {
+                        const v = x.target.value;
+                        const encashStr = hasEncash ? (a.comments.match(/\d+\s*leaves?\s*encashed/i)?.[0] || "") : "";
+                        const newC = encashStr ? (v ? `${encashStr} | ${v}` : encashStr) : v;
+                        updAtt(e.id, mo, "comments", newC);
+                      }} />
+                    </td>
                   </tr>
                 );
               })}</tbody>
@@ -1184,7 +1288,7 @@ export default function App() {
                         const match = a.comments.match(/(\d+)\s*leave/i);
                         if (match) {
                             const eDays = Number(match[1]);
-                            encashAmt = Math.round((corePay / calDays) * eDays);
+                            encashAmt = Math.round((corePay / 30) * eDays);
                             autoNote = `${eDays} leaves encashed`;
                         }
                     }
@@ -1200,7 +1304,6 @@ export default function App() {
                 {[["Basic", "basic"], ["HRA", "hra"], ["Conv", "conv"], ["Med", "med"], ["Incentive", "inc"], ["Other Earn", "oth"], ["LOP (₹)", "lop"], ["Advance", "adv"], ["PT", "pt"], ["TDS", "tds"], ["Other Ded", "othD"]].map(([l, k]) => (<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={(e) => {
                     const v = e.target.value;
                     const nextEn = { ...nEn, [k]: v };
-                    // Auto-recalculate LOP if CORE salary component is manually edited
                     if (["basic", "hra", "conv", "med"].includes(k) && pEmp) {
                         const calDays = getCalendarDays(nextEn.m, fy);
                         const corePay = (+nextEn.basic || 0) + (+nextEn.hra || 0) + (+nextEn.conv || 0) + (+nextEn.med || 0);
@@ -1211,7 +1314,7 @@ export default function App() {
                             const match = a.comments.match(/(\d+)\s*leave/i);
                             if (match) {
                                 const eDays = Number(match[1]);
-                                nextEn.oth = Math.round((corePay / calDays) * eDays);
+                                nextEn.oth = Math.round((corePay / 30) * eDays);
                             }
                         }
                     }
