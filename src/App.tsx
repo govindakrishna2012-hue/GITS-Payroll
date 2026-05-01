@@ -93,40 +93,12 @@ const exportCSV = (rows, fn) => {
   setTimeout(() => document.body.removeChild(a), 100);
 };
 
-const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
-  const sal = entries.filter((r) => r.t === "s").reduce(
-    (acc, curr) => ({
-      basic: acc.basic + Number(curr.basic || 0),
-      hra: acc.hra + Number(curr.hra || 0),
-      conv: acc.conv + Number(curr.conv || 0),
-      med: acc.med + Number(curr.med || 0),
-      oth: acc.oth + Number(curr.oth || 0),
-      lop: acc.lop + Number(curr.lop || 0),
-      adv: acc.adv + Number(curr.adv || 0),
-      pt: acc.pt + Number(curr.pt || 0),
-      tds: acc.tds + Number(curr.tds || 0),
-      othD: acc.othD + Number(curr.othD || 0),
-      note: acc.note ? (curr.note ? acc.note + " | " + curr.note : acc.note) : curr.note || "",
-    }),
-    { basic: 0, hra: 0, conv: 0, med: 0, oth: 0, lop: 0, adv: 0, pt: 0, tds: 0, othD: 0, note: "" }
-  );
-
-  const incs = entries.filter((r) => r.t === "i").reduce((s, r) => s + (r.inc || 0), 0);
-  const a = att || {};
-  const wd = getWD(mo, fy);
-  const present = a.present !== undefined && a.present !== null ? a.present : "-";
-  const leave = a.leave !== undefined && a.leave !== null ? a.leave : "-";
-  const bal = a.bal !== undefined && a.bal !== null ? a.bal : "-";
-  const g = gr(sal) + incs, d = dd(sal), n = g - d;
-  const displayYear = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Payslip - ${emp.name}</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 30px; color: #333; margin: 0; }
+// NEW: Universal Bulk Payslip HTML Generator
+const generatePayslipsHtml = (slipsData, fy) => {
+  const styles = `
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eee; padding: 20px; color: #333; margin: 0; }
+    .slip-container { page-break-after: always; margin-bottom: 40px; }
+    .slip-container:last-child { page-break-after: auto; margin-bottom: 0; }
     .box { max-width: 800px; margin: auto; background: #fff; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,.05); border-radius: 8px; border-top: 5px solid #185FA5; }
     .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; }
     .h-l img { margin: 0 0 5px 0; max-height: 50px; display: block; }
@@ -150,90 +122,134 @@ const buildSlip = (emp, mo, fy, fyStr, entries, att) => {
     .sig { display: flex; justify-content: space-between; margin-top: 50px; }
     .s-l { font-size: 12px; font-weight: 600; color: #444; border-top: 1px solid #ccc; padding-top: 10px; width: 180px; text-align: center; }
     .ftr { text-align: center; margin-top: 30px; font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 15px; }
-    .btn { display: block; width: 200px; margin: 0 auto 20px; padding: 12px; text-align: center; background: #185FA5; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
-    @media print { body { background: #fff; padding: 0; } .box { box-shadow: none; border: none; padding: 0; } .btn { display: none; } }
-  </style>
-</head>
-<body>
-  <button class="btn" onclick="window.print()">Print Payslip</button>
-  <div class="box">
-    <div class="hdr">
-      <div class="h-l">
-        <img src="/logo.png" alt="GITS Logo" />
-        <p>${AD}</p>
+    .print-btn { display: block; width: 250px; margin: 0 auto 20px; padding: 12px; text-align: center; background: #1D9E75; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 15px;}
+    @media print { body { background: #fff; padding: 0; } .box { box-shadow: none; border: none; padding: 0; } .print-btn { display: none; } .slip-container { margin-bottom: 0; } }
+  `;
+
+  let htmlContent = slipsData.map((data) => {
+    const { emp, mo, entries, att } = data;
+    const totals = entries.reduce(
+      (acc, curr) => ({
+        basic: acc.basic + Number(curr.basic || 0),
+        hra: acc.hra + Number(curr.hra || 0),
+        conv: acc.conv + Number(curr.conv || 0),
+        med: acc.med + Number(curr.med || 0),
+        inc: acc.inc + Number(curr.inc || 0),
+        oth: acc.oth + Number(curr.oth || 0),
+        lop: acc.lop + Number(curr.lop || 0),
+        adv: acc.adv + Number(curr.adv || 0),
+        pt: acc.pt + Number(curr.pt || 0),
+        tds: acc.tds + Number(curr.tds || 0),
+        othD: acc.othD + Number(curr.othD || 0),
+        note: acc.note ? (curr.note ? acc.note + " | " + curr.note : acc.note) : curr.note || "",
+      }),
+      { basic: 0, hra: 0, conv: 0, med: 0, inc: 0, oth: 0, lop: 0, adv: 0, pt: 0, tds: 0, othD: 0, note: "" }
+    );
+
+    const a = att || {};
+    const wd = getWD(mo, fy);
+    const present = a.present !== undefined && a.present !== null ? a.present : "-";
+    const leave = a.leave !== undefined && a.leave !== null ? a.leave : "-";
+    const bal = a.bal !== undefined && a.bal !== null ? a.bal : "-";
+    const g = gr(totals);
+    const d = dd(totals);
+    const n = g - d;
+    const displayYear = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
+
+    return `
+      <div class="slip-container">
+        <div class="box">
+          <div class="hdr">
+            <div class="h-l">
+              <img src="/logo.png" alt="GITS Logo" />
+              <p>${AD}</p>
+            </div>
+            <div class="h-r">
+              <h2>PAYSLIP</h2>
+              <p>${mo.toUpperCase()} ${displayYear}</p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <div class="row"><div class="lbl">Employee Name</div><div class="val">: ${emp.name}</div></div>
+              <div class="row"><div class="lbl">Employee ID</div><div class="val">: ${emp.id}</div></div>
+              <div class="row"><div class="lbl">Designation</div><div class="val">: ${emp.desig || "-"}</div></div>
+              <div class="row"><div class="lbl">Date of Joining</div><div class="val">: ${fmtDate(emp.start)}</div></div>
+              <div class="row"><div class="lbl">PAN</div><div class="val">: ${emp.pan || "-"}</div></div>
+              <div class="row"><div class="lbl">Bank A/C</div><div class="val">: ${emp.bank || "-"}</div></div>
+            </div>
+            <div>
+              <div class="row"><div class="lbl">Total Working Days</div><div class="val">: ${wd}</div></div>
+              <div class="row"><div class="lbl">Days Worked</div><div class="val">: ${present}</div></div>
+              <div class="row"><div class="lbl">Leave Availed</div><div class="val">: ${leave}</div></div>
+              <div class="row"><div class="lbl">Leave Balance</div><div class="val">: ${bal}</div></div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:35%">EARNINGS</th><th class="tr" style="width:15%">AMOUNT</th>
+                <th style="width:35%">DEDUCTIONS</th><th class="tr" style="width:15%">AMOUNT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Basic Salary</td><td class="tr fw">${f$(totals.basic)}</td>
+                <td>Profession Tax</td><td class="tr fw">${f$(totals.pt)}</td>
+              </tr>
+              <tr>
+                <td>House Rent Allowance</td><td class="tr fw">${f$(totals.hra)}</td>
+                <td>Tax Deducted at Source (TDS)</td><td class="tr fw">${f$(totals.tds)}</td>
+              </tr>
+              <tr>
+                <td>Conveyance</td><td class="tr fw">${f$(totals.conv)}</td>
+                <td>Staff Advance</td><td class="tr fw">${f$(totals.adv)}</td>
+              </tr>
+              <tr>
+                <td>Medical Allowance</td><td class="tr fw">${f$(totals.med)}</td>
+                <td>Loss of Pay (LOP)</td><td class="tr fw">${f$(totals.lop)}</td>
+              </tr>
+              <tr>
+                <td>Incentives</td><td class="tr fw">${f$(totals.inc)}</td>
+                <td>Other Deductions</td><td class="tr fw">${f$(totals.othD)}</td>
+              </tr>
+              <tr>
+                <td>Arrears & Others</td><td class="tr fw">${f$(totals.oth)}</td>
+                <td></td><td class="tr fw"></td>
+              </tr>
+              <tr class="tot">
+                <td>Gross Earnings</td><td class="tr">${f$(g)}</td>
+                <td>Total Deductions</td><td class="tr">${f$(d)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="net">
+            <div class="n-t">Net Pay<br><span style="font-size:10px;color:#555;text-transform:none;font-weight:normal">(Gross Earnings - Total Deductions)</span></div>
+            <div class="n-a">₹ ${f$(n)}</div>
+          </div>
+          ${totals.note ? `<div style="font-size:12px;color:#444;background:#fff8e1;padding:10px 15px;border-left:3px solid #ffc107;border-radius:4px;margin-bottom:20px"><b>Note:</b> ${totals.note}</div>` : ""}
+          <div class="sig">
+            <div class="s-l">Employer Signature</div>
+            <div class="s-l">Employee Signature</div>
+          </div>
+          <div class="ftr">This is a computer-generated document. No physical signature is required.</div>
+        </div>
       </div>
-      <div class="h-r">
-        <h2>PAYSLIP</h2>
-        <p>${mo.toUpperCase()} ${displayYear}</p>
-      </div>
-    </div>
-    <div class="grid">
-      <div>
-        <div class="row"><div class="lbl">Employee Name</div><div class="val">: ${emp.name}</div></div>
-        <div class="row"><div class="lbl">Employee ID</div><div class="val">: ${emp.id}</div></div>
-        <div class="row"><div class="lbl">Designation</div><div class="val">: ${emp.desig || "-"}</div></div>
-        <div class="row"><div class="lbl">Date of Joining</div><div class="val">: ${fmtDate(emp.start)}</div></div>
-        <div class="row"><div class="lbl">PAN</div><div class="val">: ${emp.pan || "-"}</div></div>
-        <div class="row"><div class="lbl">Bank A/C</div><div class="val">: ${emp.bank || "-"}</div></div>
-      </div>
-      <div>
-        <div class="row"><div class="lbl">Total Working Days</div><div class="val">: ${wd}</div></div>
-        <div class="row"><div class="lbl">Days Worked</div><div class="val">: ${present}</div></div>
-        <div class="row"><div class="lbl">Leave Availed</div><div class="val">: ${leave}</div></div>
-        <div class="row"><div class="lbl">Leave Balance</div><div class="val">: ${bal}</div></div>
-      </div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:35%">EARNINGS</th><th class="tr" style="width:15%">AMOUNT</th>
-          <th style="width:35%">DEDUCTIONS</th><th class="tr" style="width:15%">AMOUNT</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Basic Salary</td><td class="tr fw">${f$(sal.basic)}</td>
-          <td>Profession Tax</td><td class="tr fw">${f$(sal.pt)}</td>
-        </tr>
-        <tr>
-          <td>House Rent Allowance</td><td class="tr fw">${f$(sal.hra)}</td>
-          <td>Tax Deducted at Source (TDS)</td><td class="tr fw">${f$(sal.tds)}</td>
-        </tr>
-        <tr>
-          <td>Conveyance</td><td class="tr fw">${f$(sal.conv)}</td>
-          <td>Staff Advance</td><td class="tr fw">${f$(sal.adv)}</td>
-        </tr>
-        <tr>
-          <td>Medical Allowance</td><td class="tr fw">${f$(sal.med)}</td>
-          <td>Loss of Pay (LOP)</td><td class="tr fw">${f$(sal.lop)}</td>
-        </tr>
-        <tr>
-          <td>Incentives</td><td class="tr fw">${f$(incs)}</td>
-          <td>Other Deductions</td><td class="tr fw">${f$(sal.othD)}</td>
-        </tr>
-        <tr>
-          <td>Arrears & Others</td><td class="tr fw">${f$(sal.oth)}</td>
-          <td></td><td class="tr fw"></td>
-        </tr>
-        <tr class="tot">
-          <td>Gross Earnings</td><td class="tr">${f$(g)}</td>
-          <td>Total Deductions</td><td class="tr">${f$(d)}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="net">
-      <div class="n-t">Net Pay<br><span style="font-size:10px;color:#555;text-transform:none;font-weight:normal">(Gross Earnings - Total Deductions)</span></div>
-      <div class="n-a">₹ ${f$(n)}</div>
-    </div>
-    ${sal.note ? `<div style="font-size:12px;color:#444;background:#fff8e1;padding:10px 15px;border-left:3px solid #ffc107;border-radius:4px;margin-bottom:20px"><b>Note:</b> ${sal.note}</div>` : ""}
-    <div class="sig">
-      <div class="s-l">Employer Signature</div>
-      <div class="s-l">Employee Signature</div>
-    </div>
-    <div class="ftr">This is a computer-generated document. No physical signature is required.</div>
-  </div>
-</body>
-</html>`;
+    `;
+  }).join('');
+
+  return `<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>GITS Bulk Payslips</title>
+    <style>${styles}</style>
+  </head>
+  <body>
+    <button class="print-btn" onclick="window.print()">🖨️ Save All as PDF</button>
+    ${htmlContent}
+  </body>
+  </html>`;
 };
 
 export default function App() {
@@ -312,6 +328,7 @@ export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [fy, setFy] = useState("2025");
   const [mo, setMo] = useState("Apr");
+  const [attLedgerMo, setAttLedgerMo] = useState(""); 
   const [slip, setSlip] = useState(null);
 
   const [lEmp, setLEmp] = useState("");
@@ -528,7 +545,6 @@ export default function App() {
     return { basic: 0, hra: 0, conv: 800, med: 1500, inc: 0, oth: 0, lop: 0, adv: 0, pt: 200, tds: 0, othD: 0, note: "" };
   };
 
-  // --- AUTOMATED POLICY INTEGRATION (LEDGER) ---
   const openBulkPayroll = () => {
     const defaults = {};
     emps.filter((e) => isActiveInMonth(e, mo, fy) && e.id !== "admin").forEach((emp) => {
@@ -544,7 +560,6 @@ export default function App() {
           lopAmt = Math.round((corePay / calDays) * lopDays);
       }
 
-      // Auto-Calc Leave Encashment from comments (Strictly uses /30 per policy)
       let encashAmt = 0;
       let autoNote = "";
       if (a?.comments && a.comments.toLowerCase().includes("encash")) {
@@ -616,17 +631,21 @@ export default function App() {
   };
 
   const updAtt = (eid, m, field, val) => {
-    let newVal = val;
-    if (field !== "comments") newVal = val === "" ? null : Number(val);
     setAtt((p) => {
       const empData = p[eid] || {};
       const fyData = empData[fy] || getEmptyAtt();
       const moData = fyData[m] || {};
+
+      if (field === "CLEAR_ALL") {
+         return { ...p, [eid]: { ...empData, [fy]: { ...fyData, [m]: { present: null, leave: null, bal: null, lop: null, holiday: null, comments: "" } } } };
+      }
+
+      let newVal = val;
+      if (field !== "comments") newVal = val === "" ? null : Number(val);
       return { ...p, [eid]: { ...empData, [fy]: { ...fyData, [m]: { ...moData, [field]: newVal } } } };
     });
   };
 
-  // --- CARRY-OVER MATH ---
   const getCarryOver = (eid) => {
     if (!["Jan", "Feb", "Mar"].includes(mo)) return 0;
     const decBal = Number(att[eid]?.[fy]?.["Dec"]?.bal || 0);
@@ -647,7 +666,6 @@ export default function App() {
     return remaining > 0 ? remaining : 0;
   };
 
-  // --- AUTOMATED POLICY ACCRUAL ---
   const runLeaveAccrual = () => {
     if (!confirm(`Auto-calculate Present Days, Balances, Encashments, and LOP for ${mo} based on GITS Policy?`)) return;
 
@@ -663,7 +681,6 @@ export default function App() {
         let currentHolidays = Number(currentAtt.holiday || 0);
         const wDays = getWD(mo, fy);
 
-        // BYPASS FOR NON-LEAVE POLICY EMPLOYEES
         if (emp.leavePolicy === "No") {
             let newPresent = wDays - currentHolidays - currentLeaves;
             if (newPresent < 0) newPresent = 0;
@@ -672,7 +689,6 @@ export default function App() {
             return;
         }
 
-        // STANDARD ACCRUAL MATH
         const mIdx = MS.indexOf(mo);
         let prevMo = mIdx > 0 ? MS[mIdx - 1] : "Mar";
         let prevFy = mIdx > 0 ? fy : String(parseInt(fy) - 1);
@@ -690,7 +706,6 @@ export default function App() {
         let newBal = 0;
         let newLop = 0;
 
-        // 1. Deduct Leaves Taken First
         if (currentLeaves > available) {
             newLop = currentLeaves - available;
             available = 0;
@@ -699,7 +714,6 @@ export default function App() {
             available -= currentLeaves; 
         }
 
-        // 2. Deduct Encashments (Strictly limit to available balance)
         let comments = currentAtt.comments || "";
         if (comments.toLowerCase().includes("encash")) {
             const match = comments.match(/(\d+)\s*leave/i);
@@ -742,7 +756,7 @@ export default function App() {
       const inserts = [];
       emps.filter((e) => e.id !== "admin").forEach((e) => {
         const a = att[e.id]?.[fy]?.[mo];
-        if (a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || a.comments)) {
+        if (a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || (a.comments && a.comments.trim() !== ""))) {
           inserts.push({
             emp_id: e.id, fy: fy, mo: mo,
             present: a.present === "" ? null : a.present,
@@ -759,14 +773,14 @@ export default function App() {
         const { error: insErr } = await supabase.from("gits_attendance").insert(inserts);
         if (insErr) throw insErr;
       }
-      alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Cloud!`);
+      alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Live Database!`);
     } catch (err) {
       console.error("Save error:", err);
       alert("Error saving attendance: " + err.message);
     }
   };
 
-  if (!dbLoaded) return <div style={{ padding: 50, textAlign: "center", fontFamily: "sans-serif" }}><h3>Connecting to Cloud Database...</h3></div>;
+  if (!dbLoaded) return <div style={{ padding: 50, textAlign: "center", fontFamily: "sans-serif" }}><h3>Connecting to Live Database...</h3></div>;
   if (slip) return <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column" }}><button style={{ padding: 15, background: "#1a1a2e", color: "#fff", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: 16 }} onClick={() => setSlip(null)}>✕ Close PDF Viewer</button><iframe srcDoc={slip} style={{ flex: 1, border: "none", background: "#fff" }} /></div>;
 
   if (!ses) return (
@@ -995,7 +1009,7 @@ export default function App() {
                 if (!rows.length) return <tr key={emp.id}><td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{ ...tdS, color: "#888" }}>{emp.desig}</td><td colSpan={17} style={{ ...tdS, color: "#888", textAlign: "center" }}>No entry</td></tr>;
                 return rows.map((r, i) => (
                   <tr key={emp.id + i} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{ ...tdS, color: "#888" }}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.hra)}</td><td style={tdS}>{f$(r.conv)}</td><td style={tdS}>{f$(r.med)}</td><td style={tdS}>{f$(r.inc)}</td><td style={tdS}>{f$(r.oth)}</td><td style={{ ...tdS, fontWeight: "bold" }}>{f$(gr(r))}</td><td style={tdS}>{f$(r.lop)}</td><td style={tdS}>{f$(r.adv)}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={tdS}>{f$(r.othD || 0)}</td><td style={{ ...tdS, color: "#D85A30" }}>{f$(dd(r))}</td><td style={{ ...tdS, fontWeight: "bold" }}>{f$(txInc(r))}</td><td style={{ ...tdS, color: "#1D9E75", fontWeight: "bold" }}>{f$(np(r))}</td><td style={{ ...tdS, fontSize: 11, color: "#666" }}>{r.note || "-"}</td><td style={tdS}><button style={{ ...btn, padding: "4px 8px" }} onClick={() => setSlip(buildSlip(emp, mo, fy, fyL(fy), rows, att[emp.id]?.[fy]?.[mo]))}>PDF</button></td>
+                    <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{emp.id}</td><td style={tdS}>{emp.name}</td><td style={{ ...tdS, color: "#888" }}>{emp.desig}</td><td style={tdS}>{f$(r.basic)}</td><td style={tdS}>{f$(r.hra)}</td><td style={tdS}>{f$(r.conv)}</td><td style={tdS}>{f$(r.med)}</td><td style={tdS}>{f$(r.inc)}</td><td style={tdS}>{f$(r.oth)}</td><td style={{ ...tdS, fontWeight: "bold" }}>{f$(gr(r))}</td><td style={tdS}>{f$(r.lop)}</td><td style={tdS}>{f$(r.adv)}</td><td style={tdS}>{f$(r.pt)}</td><td style={tdS}>{f$(r.tds)}</td><td style={tdS}>{f$(r.othD || 0)}</td><td style={{ ...tdS, color: "#D85A30" }}>{f$(dd(r))}</td><td style={{ ...tdS, fontWeight: "bold" }}>{f$(txInc(r))}</td><td style={{ ...tdS, color: "#1D9E75", fontWeight: "bold" }}>{f$(np(r))}</td><td style={{ ...tdS, fontSize: 11, color: "#666" }}>{r.note || "-"}</td><td style={tdS}><button style={{ ...btn, padding: "4px 8px" }} onClick={() => setSlip(generatePayslipsHtml([{ emp, mo, entries: rows, att: att[emp.id]?.[fy]?.[mo] }], fy))}>PDF</button></td>
                   </tr>
                 ));
               })}</tbody>
@@ -1118,7 +1132,7 @@ export default function App() {
 
           <div style={{ ...card, padding: 0, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP (Days)</th><th>Comments</th></tr></thead>
+              <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP (Days)</th><th>Comments</th>{ses.role === "a" && <th>Action</th>}</tr></thead>
               <tbody>{emps.filter((e) => ses.role === "a" ? isActiveInMonth(e, mo, fy) : e.id === ses.id).map((e, idx) => {
                 const a = att[e.id]?.[fy]?.[mo] || {};
                 const wDays = getWD(mo, fy);
@@ -1184,6 +1198,13 @@ export default function App() {
                         updAtt(e.id, mo, "comments", newC);
                       }} />
                     </td>
+                    {ses.role === "a" && (
+                        <td>
+                          <button style={{ ...btn, padding: "4px 8px", color: "#d32f2f", fontSize: 11, border: "1px solid #ffcdd2" }} onClick={() => {
+                            if(confirm("Clear this entire row?")) updAtt(e.id, mo, "CLEAR_ALL");
+                          }}>Clear</button>
+                        </td>
+                    )}
                   </tr>
                 );
               })}</tbody>
@@ -1200,12 +1221,16 @@ export default function App() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead><tr style={{ background: "#1a1a2e", color: "#fff", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th>{MS.map((m) => <th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
                   <tbody>
-                    {emps.filter((e) => e.id !== "admin").map((e, idx) => (
+                    {emps.filter((e) => e.id !== "admin" && MS.some(m => isActiveInMonth(e, m, fy))).map((e, idx) => (
                       <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
                         <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
                         <td style={{ ...tdS, color: "#666" }}>{e.id}</td>
                         <td style={tdS}><b>{e.name}</b></td>
-                        {MS.map((m) => <td key={m} style={tdS}>{(att[e.id]?.[fy]?.[m]?.leave > 0) ? `${att[e.id]?.[fy]?.[m]?.leave} L` : "-"}</td>)}
+                        {MS.map((m) => {
+                          const isActive = isActiveInMonth(e, m, fy);
+                          const leaveVal = att[e.id]?.[fy]?.[m]?.leave;
+                          return <td key={m} style={tdS}>{(isActive && leaveVal > 0) ? `${leaveVal} L` : "-"}</td>;
+                        })}
                       </tr>
                     ))}
                   </tbody>
@@ -1214,26 +1239,36 @@ export default function App() {
 
               {/* ATTENDANCE LEDGER */}
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 15, alignItems: "center" }}>
-                <h3 style={{ margin: 0 }}>Attendance Ledger</h3>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <h3 style={{ margin: 0 }}>Attendance Ledger</h3>
+                  <select style={{ ...sInp, width: 130, margin: 0, padding: "4px 8px" }} value={attLedgerMo} onChange={(e) => setAttLedgerMo(e.target.value)}>
+                    <option value="">All Months</option>
+                    {MS.map((m) => <option key={m} value={m}>{mL(m, fy)}</option>)}
+                  </select>
+                </div>
                 <button style={{ ...btn, background: "#1D9E75", color: "#fff", border: "none", margin: 0 }} onClick={() => {
                   const rows = [["S.No", "Emp ID", "Employee", "Month", "Work Days", "Present", "Holidays", "Leave", "Balance", "LOP", "Comments"]];
                   let sno = 1;
                   emps.filter((e) => e.id !== "admin").forEach((e) => MS.forEach((m) => {
+                    if (attLedgerMo && m !== attLedgerMo) return;
                     const a = att[e.id]?.[fy]?.[m];
-                    if (a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || a.comments)) {
+                    if (isActiveInMonth(e, m, fy) && a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || (a.comments && a.comments.trim() !== ""))) {
                       rows.push([sno++, e.id, e.name, mL(m, fy), getWD(m, fy), a.present !== null ? a.present : "-", a.holiday !== null ? a.holiday : "-", a.leave !== null ? a.leave : "-", a.bal !== null ? a.bal : "-", a.lop !== null ? a.lop : "-", a.comments || ""]);
                     }
                   }));
-                  exportCSV(rows, `Attendance_Ledger_${fyL(fy)}.csv`);
+                  exportCSV(rows, `Attendance_Ledger_${attLedgerMo || "All"}_${fyL(fy)}.csv`);
                 }}>Download Excel</button>
               </div>
               <div style={{ ...card, padding: 0, overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead><tr style={{ background: "#f4f6f8", textAlign: "left", whiteSpace: "nowrap" }}>
-                    <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Work Days</th><th style={thS}>Present</th><th style={thS}>Holidays</th><th style={thS}>Leave</th><th style={thS}>Balance</th><th style={thS}>LOP</th><th style={thS}>Comments</th>
+                    <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Work Days</th><th style={thS}>Present</th><th style={thS}>Holidays</th><th style={thS}>Leave</th><th style={thS}>Balance</th><th style={thS}>LOP</th><th style={thS}>Comments</th><th style={thS}>Action</th>
                   </tr></thead>
                   <tbody>
-                    {emps.filter((e) => e.id !== "admin").flatMap((e) => MS.map((m) => ({ e, m, a: att[e.id]?.[fy]?.[m] }))).filter((x) => x.a && (x.a.present !== null || x.a.leave !== null || x.a.holiday !== null || x.a.lop !== null || x.a.comments)).map((item, idx) => (
+                    {emps.filter((e) => e.id !== "admin")
+                      .flatMap((e) => MS.filter(m => !attLedgerMo || m === attLedgerMo).map((m) => ({ e, m, a: att[e.id]?.[fy]?.[m] })))
+                      .filter((x) => isActiveInMonth(x.e, x.m, fy) && x.a && (x.a.present !== null || x.a.leave !== null || x.a.holiday !== null || x.a.lop !== null || (x.a.comments && x.a.comments.trim() !== "")))
+                      .map((item, idx) => (
                       <tr key={item.e.id + item.m} style={{ borderBottom: "1px solid #eee" }}>
                         <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
                         <td style={{ ...tdS, color: "#666" }}>{item.e.id}</td>
@@ -1246,6 +1281,18 @@ export default function App() {
                         <td style={tdS}>{item.a.bal !== null ? item.a.bal : "-"}</td>
                         <td style={tdS}>{item.a.lop !== null ? item.a.lop : "-"}</td>
                         <td style={{ ...tdS, fontSize: 11, color: "#666" }}>{item.a.comments || "-"}</td>
+                        <td style={tdS}>
+                          <button style={{ ...btn, padding: "2px 8px", color: "red", fontSize: 11 }} onClick={async () => {
+                            if (confirm("Delete this record permanently?")) {
+                              const { error } = await supabase.from("gits_attendance").delete().eq("emp_id", item.e.id).eq("fy", fy).eq("mo", item.m);
+                              if (error) {
+                                  alert("Database Error: " + error.message);
+                              } else {
+                                  updAtt(item.e.id, item.m, "CLEAR_ALL");
+                              }
+                            }
+                          }}>Del</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1277,6 +1324,7 @@ export default function App() {
                     const l = getLastPay(id); 
                     const a = att[id]?.[fy]?.[nEn.m];
                     
+                    // Auto-calc for manual entry
                     const calDays = getCalendarDays(nEn.m, fy);
                     const corePay = (l.basic || 0) + (l.hra || 0) + (l.conv || 0) + (l.med || 0);
                     const lopDays = Number(a?.lop || 0);
@@ -1304,6 +1352,7 @@ export default function App() {
                 {[["Basic", "basic"], ["HRA", "hra"], ["Conv", "conv"], ["Med", "med"], ["Incentive", "inc"], ["Other Earn", "oth"], ["LOP (₹)", "lop"], ["Advance", "adv"], ["PT", "pt"], ["TDS", "tds"], ["Other Ded", "othD"]].map(([l, k]) => (<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={(e) => {
                     const v = e.target.value;
                     const nextEn = { ...nEn, [k]: v };
+                    // Auto-recalculate LOP if CORE salary component is manually edited
                     if (["basic", "hra", "conv", "med"].includes(k) && pEmp) {
                         const calDays = getCalendarDays(nextEn.m, fy);
                         const corePay = (+nextEn.basic || 0) + (+nextEn.hra || 0) + (+nextEn.conv || 0) + (+nextEn.med || 0);
@@ -1363,10 +1412,42 @@ export default function App() {
             <div><label style={lbl}>Start Year</label><input type="number" style={sInp} value={pFy} onChange={(e) => setPFy(e.target.value)} /></div>
             <div><label style={lbl}>Month</label><select style={sInp} value={pMo} onChange={(e) => setPMo(e.target.value)}>{MS.map((m) => (<option key={m} value={m}>{mL(m, pFy)}</option>))}</select></div>
           </div>
-          <button style={{ padding: "12px 24px", background: "#1a1a2e", color: "#fff", border: "none", borderRadius: 6, width: "100%", fontSize: 14, fontWeight: "bold" }} onClick={() => {
-            const t = ses.role === "a" ? pEmp : ses.id; const ents = (pay[t]?.[pFy] || []).filter((x) => x.m === pMo);
-            if (ents.length) setSlip(buildSlip(emps.find((e) => e.id === t), pMo, pFy, fyL(pFy), ents, att[t]?.[pFy]?.[pMo])); else alert("No record found");
-          }}>Generate PDF Payslip</button>
+          
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button style={{ padding: "12px 24px", background: "#1a1a2e", color: "#fff", border: "none", borderRadius: 6, fontWeight: "bold", cursor: "pointer" }} onClick={() => {
+              const t = ses.role === "a" ? pEmp : ses.id; 
+              if (!t) return alert("Select an employee first.");
+              const ents = (pay[t]?.[pFy] || []).filter((x) => x.m === pMo);
+              if (ents.length) setSlip(generatePayslipsHtml([{ emp: emps.find((e) => e.id === t), mo: pMo, entries: ents, att: att[t]?.[pFy]?.[pMo] }], pFy)); 
+              else alert("No record found");
+            }}>📄 Generate Single Payslip</button>
+
+            {ses.role === "a" && (
+              <>
+                <button style={{ padding: "12px 24px", background: "#185FA5", color: "#fff", border: "none", borderRadius: 6, fontWeight: "bold", cursor: "pointer" }} onClick={() => {
+                  const slips = [];
+                  emps.filter(e => e.id !== "admin").forEach(e => {
+                      const ents = (pay[e.id]?.[pFy] || []).filter((x) => x.m === pMo);
+                      if(ents.length) slips.push({ emp: e, mo: pMo, entries: ents, att: att[e.id]?.[pFy]?.[pMo] });
+                  });
+                  if (slips.length) setSlip(generatePayslipsHtml(slips, pFy));
+                  else alert("No records found for this month");
+                }}>📑 Bulk Generate (All Staff, This Month)</button>
+
+                <button style={{ padding: "12px 24px", background: "#8e44ad", color: "#fff", border: "none", borderRadius: 6, fontWeight: "bold", cursor: "pointer" }} onClick={() => {
+                  const slips = [];
+                  emps.filter(e => e.id !== "admin").forEach(e => {
+                      MS.forEach(m => {
+                          const ents = (pay[e.id]?.[pFy] || []).filter((x) => x.m === m);
+                          if(ents.length) slips.push({ emp: e, mo: m, entries: ents, att: att[e.id]?.[pFy]?.[m] });
+                      });
+                  });
+                  if (slips.length) setSlip(generatePayslipsHtml(slips, pFy));
+                  else alert("No records found for this year");
+                }}>📚 Bulk Generate (All Staff, Entire Year)</button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
