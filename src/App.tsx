@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import * as XLSX from "xlsx"; 
 
 // ==========================================
 // 🔴 CLOUD DATABASE CONNECTION (LIVE) 🔴
@@ -18,6 +19,16 @@ const SEC_QS = [
   "What was the name of your first pet?",
   "What high school did you attend?"
 ];
+
+// Fallback logic for initialization
+const getInitState = () => {
+  const d = new Date();
+  const mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+  const y = d.getFullYear();
+  const fy = ["Jan", "Feb", "Mar"].includes(mo) ? String(y - 1) : String(y);
+  return { mo, fy };
+};
+const { mo: initMo, fy: initFy } = getInitState();
 
 const fyL = (y) => `${parseInt(y || 0)}-${String(parseInt(y || 0) + 1).slice(-2)}`;
 const mL = (m, y) => `${m}-${["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].includes(m) ? parseInt(y || 0) : parseInt(y || 0) + 1}`;
@@ -93,7 +104,52 @@ const exportCSV = (rows, fn) => {
   setTimeout(() => document.body.removeChild(a), 100);
 };
 
-// NEW: Universal Bulk Payslip HTML Generator
+// XLSX Export Function
+const exportExcel = (rows, fn) => {
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Report");
+  XLSX.writeFile(wb, `${fn}.xlsx`);
+};
+
+// Universal Company PDF Report Generator
+const buildReportPdf = (title, subtitle, head, rows) => {
+  return `<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>${title}</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; padding: 20px; color: #333; margin: 0; }
+      .hdr { text-align: center; border-bottom: 2px solid #185FA5; padding-bottom: 20px; margin-bottom: 25px; }
+      .hdr h2 { margin: 0 0 5px 0; color: #185FA5; font-size: 24px; letter-spacing: 1px; }
+      .hdr p { margin: 0; font-size: 12px; color: #666; }
+      .hdr h3 { margin: 15px 0 0 0; color: #333; font-size: 18px; text-transform: uppercase; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th { background: #1a1a2e; color: #fff; text-align: left; padding: 8px; border: 1px solid #1a1a2e; }
+      td { padding: 8px; border: 1px solid #e2e8f0; }
+      .print-btn { display: block; width: 200px; margin: 0 auto 20px; padding: 12px; text-align: center; background: #1D9E75; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; }
+      @media print { .print-btn { display: none; } }
+    </style>
+  </head>
+  <body>
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+    <div class="hdr">
+      <h2>${CO}</h2>
+      <p>${AD}</p>
+      <h3>${title}</h3>
+      <p><b>${subtitle}</b></p>
+    </div>
+    <table>
+      <thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${rows.map((r) => `<tr>${r.map((c) => `<td>${c !== undefined && c !== null ? c : ""}</td>`).join("")}</tr>`).join("")}
+      </tbody>
+    </table>
+  </body>
+  </html>`;
+};
+
 const generatePayslipsHtml = (slipsData, fy) => {
   const styles = `
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eee; padding: 20px; color: #333; margin: 0; }
@@ -182,7 +238,7 @@ const generatePayslipsHtml = (slipsData, fy) => {
               <div class="row"><div class="lbl">Total Working Days</div><div class="val">: ${wd}</div></div>
               <div class="row"><div class="lbl">Days Worked</div><div class="val">: ${present}</div></div>
               <div class="row"><div class="lbl">Leave Availed</div><div class="val">: ${leave}</div></div>
-              <div class="row"><div class="lbl">Leave Balance</div><div class="val">: ${bal}</div></div>
+              <div class="row"><div class="lbl">Leave Balance</div><div class="val">: ${emp.leavePolicy === 'No' ? 'NA' : bal}</div></div>
             </div>
           </div>
           <table>
@@ -259,6 +315,21 @@ export default function App() {
   const [emps, setEmps] = useState([]);
   const [pay, setPay] = useState({});
   const [att, setAtt] = useState({});
+  const [dailyAtt, setDailyAtt] = useState([]); 
+
+  // Core State
+  const [ses, setSes] = useState(null);
+  const [tab, setTab] = useState("dashboard");
+  const [fy, setFy] = useState(initFy);
+  const [mo, setMo] = useState(initMo);
+  const [attSubTab, setAttSubTab] = useState("daily"); 
+  const [attLedgerMo, setAttLedgerMo] = useState(""); 
+  const [slip, setSlip] = useState(null);
+
+  const [lEmp, setLEmp] = useState("");
+  const [pEmp, setPEmp] = useState("");
+  const [pMo, setPMo] = useState(initMo);
+  const [pFy, setPFy] = useState(initFy);
 
   useEffect(() => {
     const initDb = async () => {
@@ -266,37 +337,38 @@ export default function App() {
       let loadedEmps = [];
       let loadedLedData = [];
       let loadedAttData = [];
+      let loadedDailyData = [];
 
       try {
         const { data, error } = await supabase.from("gits_employees").select("*");
         if (error) throw error;
         loadedEmps = data || [];
-      } catch (e) {
-        errs.push(`Employees: ${e.message}`);
-      }
+      } catch (e) { errs.push(`Employees: ${e.message}`); }
 
       try {
         const { data, error } = await supabase.from("gits_ledger").select("*");
         if (error) throw error;
         loadedLedData = data || [];
-      } catch (e) {
-        errs.push(`Ledger: ${e.message}`);
-      }
+      } catch (e) { errs.push(`Ledger: ${e.message}`); }
 
       try {
         const { data, error } = await supabase.from("gits_attendance").select("*");
         if (error) throw error;
         loadedAttData = data || [];
-      } catch (e) {
-        errs.push(`Attendance: ${e.message}`);
-      }
+      } catch (e) { errs.push(`Attendance: ${e.message}`); }
+
+      try {
+        const { data, error } = await supabase.from("gits_daily_attendance").select("*");
+        if (error && error.code !== "42P01") throw error;
+        loadedDailyData = data || [];
+      } catch (e) { }
 
       if (loadedEmps.length === 0) {
         loadedEmps.push({ id: "admin", name: "System Admin", pwd: "admin123", status: "Active", leave_policy: "Yes" });
       }
 
       const formattedEmps = loadedEmps.map((e) => ({
-        id: e.id, name: e.name, desig: e.desig, pan: e.pan, cat: e.cat, basic: e.basic,
+        id: e.id, name: e.name, desig: e.desig, pan: e.pan || "", cat: e.cat, basic: e.basic,
         phone: e.phone, email: e.email, pwd: e.pwd, start: e.start_date, end: e.end_date,
         status: e.status, comments: e.comments, bank: e.bank, driveLink: e.drive_link, sec_q: e.sec_q, sec_a: e.sec_a, leavePolicy: e.leave_policy || "Yes"
       }));
@@ -315,26 +387,59 @@ export default function App() {
         formattedAtt[r.emp_id][r.fy][r.mo] = { present: r.present, leave: r.leave, bal: r.bal, lop: r.lop, holiday: r.holiday, comments: r.comments };
       });
 
+      // --- FUTURE-PROOF LATEST MONTH DETECTOR ---
+      let maxScore = -1;
+      let latestMo = null;
+      let latestFy = null;
+
+      const d = new Date();
+      const curMoStr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+      const curYStr = d.getFullYear();
+      const curFyStr = ["Jan", "Feb", "Mar"].includes(curMoStr) ? String(curYStr - 1) : String(curYStr);
+      
+      // Safety Cap: Ignore any test data created more than 1 month in the future
+      const curScoreLimit = parseInt(curFyStr) * 100 + MS.indexOf(curMoStr) + 1;
+
+      const evalData = (arr, isLedger) => {
+        arr.forEach(r => {
+          // Check that row actually has data (ignore completely blank cleared rows)
+          const hasData = isLedger 
+            ? (r.basic > 0 || r.inc > 0 || r.oth > 0 || r.lop > 0 || (r.note && r.note.trim() !== ""))
+            : (r.present !== null || r.leave !== null || r.holiday !== null || r.lop !== null || (r.comments && r.comments.trim() !== ""));
+
+          if (r.fy && r.mo && hasData) {
+            const mIdx = MS.indexOf(r.mo);
+            if (mIdx !== -1) {
+              const score = parseInt(r.fy) * 100 + mIdx;
+              if (score > maxScore && score <= curScoreLimit) {
+                maxScore = score;
+                latestMo = r.mo;
+                latestFy = r.fy;
+              }
+            }
+          }
+        });
+      };
+      
+      evalData(loadedLedData, true);
+      evalData(loadedAttData, false);
+
+      if (latestMo && latestFy) {
+        setMo(latestMo);
+        setFy(latestFy);
+        setPMo(latestMo);
+        setPFy(latestFy);
+      }
+
       setEmps(formattedEmps);
       setPay(formattedPay);
       setAtt(formattedAtt);
+      setDailyAtt(loadedDailyData);
       if (errs.length > 0) setSysWarn(errs.join(" | "));
       setDbLoaded(true);
     };
     initDb();
   }, []);
-
-  const [ses, setSes] = useState(null);
-  const [tab, setTab] = useState("dashboard");
-  const [fy, setFy] = useState("2025");
-  const [mo, setMo] = useState("Apr");
-  const [attLedgerMo, setAttLedgerMo] = useState(""); 
-  const [slip, setSlip] = useState(null);
-
-  const [lEmp, setLEmp] = useState("");
-  const [pEmp, setPEmp] = useState("");
-  const [pMo, setPMo] = useState("Apr");
-  const [pFy, setPFy] = useState("2025");
 
   const [showAddEmp, setShowAddEmp] = useState(false);
   const [nE, setNE] = useState({ id: "", name: "", desig: "", pan: "", cat: "Onshore", basic: "", phone: "", email: "", pwd: "", start: "", end: "", status: "Active", bank: "", comments: "", driveLink: "", leavePolicy: "Yes" });
@@ -349,6 +454,9 @@ export default function App() {
   const [bulkData, setBulkData] = useState({});
   const [showOffCycle, setShowOffCycle] = useState(false);
   const [offCycleData, setOffCycleData] = useState({ empId: "", basic: 0, hra: 0, conv: 0, med: 0, inc: 0, oth: 0, lop: 0, adv: 0, pt: 0, tds: 0, othD: 0, note: "" });
+
+  const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0]); 
+  const [dailyForm, setDailyForm] = useState({}); 
 
   const idR = useRef(""), pwR = useRef("");
   const [forgotStep, setForgotStep] = useState(0);
@@ -377,6 +485,17 @@ export default function App() {
     );
     return { g, d, n };
   }, [emps, pay, fy, mo, ses, myE]);
+
+  useEffect(() => {
+    const form = {};
+    emps.forEach(e => {
+      if (e.id !== 'admin' && e.status === 'Active') {
+        const existing = dailyAtt.find(r => r.emp_id === e.id && r.date === markDate);
+        form[e.id] = existing ? { status: existing.status, reason: existing.reason || "" } : { status: "Present", reason: "" };
+      }
+    });
+    setDailyForm(form);
+  }, [markDate, dailyAtt, emps]);
 
   const login = () => {
     const id = idR.current.trim(), pw = pwR.current.trim();
@@ -481,14 +600,14 @@ export default function App() {
     const payload = {
       phone: editData.phone, email: editData.email, start_date: editData.start, end_date: editData.end,
       status: editData.status, comments: combinedComments, bank: editData.bank, drive_link: editData.driveLink,
-      leave_policy: editData.leavePolicy
+      leave_policy: editData.leavePolicy, pan: editData.pan
     };
     if (editData.adminForcePwd) payload.pwd = editData.adminForcePwd;
 
     await supabase.from("gits_employees").update(payload).eq("id", editEmp);
     setEmps((p) =>
       p.map((x) =>
-        x.id === editEmp ? { ...x, phone: editData.phone, email: editData.email, start: editData.start, end: editData.end, status: editData.status, comments: combinedComments, bank: editData.bank, driveLink: editData.driveLink, leavePolicy: editData.leavePolicy, ...(editData.adminForcePwd ? { pwd: editData.adminForcePwd } : {}) } : x
+        x.id === editEmp ? { ...x, phone: editData.phone, email: editData.email, start: editData.start, end: editData.end, status: editData.status, comments: combinedComments, bank: editData.bank, driveLink: editData.driveLink, leavePolicy: editData.leavePolicy, pan: editData.pan, ...(editData.adminForcePwd ? { pwd: editData.adminForcePwd } : {}) } : x
       )
     );
     setEditEmp(null);
@@ -618,18 +737,6 @@ export default function App() {
     alert(`Off-Cycle Payroll saved for ${emps.find((e) => e.id === offCycleData.empId)?.name}`);
   };
 
-  const handleExportLedger = () => {
-    const head = ["S.No", "Emp ID", "Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Other Earnings", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Other Deductions", "Total Deductions", "Taxable Income", "Net Amount", "Note/Comments"];
-    const rows = [head];
-    const tEmps = ses?.role === "a" ? (lEmp ? emps.filter((e) => e.id === lEmp) : emps.filter((e) => e.id !== "admin")) : [myE];
-    let sno = 1;
-    tEmps.forEach((e) => {
-      if (!e) return;
-      (pay[e.id]?.[fy] || []).filter((r) => !mo || r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, mL(r.m, fy), r.t === "s" ? "Salary" : "Incentive", r.basic || 0, r.hra || 0, r.conv || 0, r.med || 0, r.inc || 0, r.oth || 0, gr(r), r.lop || 0, r.adv || 0, r.pt || 0, r.tds || 0, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""]));
-    });
-    exportCSV(rows, `Ledger_${fyL(fy)}.csv`);
-  };
-
   const updAtt = (eid, m, field, val) => {
     setAtt((p) => {
       const empData = p[eid] || {};
@@ -666,8 +773,36 @@ export default function App() {
     return remaining > 0 ? remaining : 0;
   };
 
+  const saveDailyAttendance = async () => {
+    const inserts = [];
+    Object.keys(dailyForm).forEach(eid => {
+       inserts.push({
+          emp_id: eid,
+          date: markDate,
+          status: dailyForm[eid].status,
+          reason: dailyForm[eid].reason
+       });
+    });
+
+    try {
+      await supabase.from("gits_daily_attendance").delete().eq("date", markDate);
+      if (inserts.length > 0) {
+        const { error } = await supabase.from("gits_daily_attendance").insert(inserts);
+        if (error) throw error;
+      }
+      setDailyAtt(prev => [...prev.filter(r => r.date !== markDate), ...inserts]);
+      alert(`Daily Attendance saved for ${markDate}`);
+    } catch (err) {
+      alert("Error saving daily attendance: " + err.message);
+    }
+  };
+
   const runLeaveAccrual = () => {
-    if (!confirm(`Auto-calculate Present Days, Balances, Encashments, and LOP for ${mo} based on GITS Policy?`)) return;
+    if (!confirm(`Auto-calculate from Daily Records for ${mo}? This will overwrite manual Leave/Holiday counts.`)) return;
+
+    const yNum = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
+    const mIdxStr = String(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mo) + 1).padStart(2, '0');
+    const targetPrefix = `${yNum}-${mIdxStr}`; 
 
     const newAtt = { ...att };
     emps.forEach(emp => {
@@ -676,16 +811,52 @@ export default function App() {
         if(!newAtt[emp.id]) newAtt[emp.id] = {};
         if(!newAtt[emp.id][fy]) newAtt[emp.id][fy] = getEmptyAtt();
 
+        const empDaily = dailyAtt.filter(r => r.emp_id === emp.id && r.date.startsWith(targetPrefix));
+        let aggLeaves = 0;
+        let aggHolidays = 0;
+        let dailyReasons = [];
+
+        empDaily.forEach(d => {
+            if (d.status === "Leave" || d.status === "Absent") {
+                aggLeaves++;
+                if (d.reason && d.reason.trim() !== "") dailyReasons.push(d.reason.trim());
+            }
+            if (d.status === "Holiday") {
+                aggHolidays++;
+            }
+        });
+
         let currentAtt = newAtt[emp.id][fy][mo] || {};
-        let currentLeaves = Number(currentAtt.leave || 0);
-        let currentHolidays = Number(currentAtt.holiday || 0);
+        let currentLeaves = aggLeaves; 
+        let currentHolidays = aggHolidays; 
         const wDays = getWD(mo, fy);
+
+        let baseComments = currentAtt.comments || "";
+        let encashStr = "";
+        if (baseComments.toLowerCase().includes("encash")) {
+            const match = baseComments.match(/(\d+)\s*leaves?\s*encashed/i);
+            if (match) encashStr = match[0];
+        }
 
         if (emp.leavePolicy === "No") {
             let newPresent = wDays - currentHolidays - currentLeaves;
             if (newPresent < 0) newPresent = 0;
             
-            newAtt[emp.id][fy][mo] = { ...currentAtt, present: newPresent, bal: null, lop: null };
+            let finalComment = encashStr;
+            if (dailyReasons.length > 0) {
+               const rStr = dailyReasons.join(", ");
+               finalComment = finalComment ? `${finalComment} | ${rStr}` : rStr;
+            }
+
+            newAtt[emp.id][fy][mo] = { 
+                ...currentAtt, 
+                present: newPresent, 
+                leave: currentLeaves, 
+                holiday: currentHolidays, 
+                bal: null, 
+                lop: null,
+                comments: finalComment
+            };
             return;
         }
 
@@ -714,20 +885,17 @@ export default function App() {
             available -= currentLeaves; 
         }
 
-        let comments = currentAtt.comments || "";
-        if (comments.toLowerCase().includes("encash")) {
-            const match = comments.match(/(\d+)\s*leave/i);
+        if (encashStr) {
+            const match = encashStr.match(/(\d+)\s*leave/i);
             if (match) {
                 const requestedEncash = Number(match[1]);
                 if (requestedEncash > 0) {
                     const actualEncash = Math.min(requestedEncash, available);
                     available -= actualEncash;
-                    
                     if (actualEncash > 0) {
-                        comments = comments.replace(new RegExp(`${requestedEncash}\\s*leave`, "i"), `${actualEncash} leave`);
+                        encashStr = `${actualEncash} leave${actualEncash > 1 ? 's' : ''} encashed`;
                     } else {
-                        comments = comments.replace(/\d+\s*leaves?\s*encashed/i, "").trim();
-                        comments = comments.replace(/^\|\s*|\s*\|\s*$/g, "").trim();
+                        encashStr = ""; 
                     }
                 }
             }
@@ -736,16 +904,24 @@ export default function App() {
         let newPresent = wDays - currentHolidays - currentLeaves;
         if (newPresent < 0) newPresent = 0;
 
+        let finalComment = encashStr;
+        if (dailyReasons.length > 0) {
+            const rStr = dailyReasons.join(", ");
+            finalComment = finalComment ? `${finalComment} | ${rStr}` : rStr;
+        }
+
         newAtt[emp.id][fy][mo] = {
             ...currentAtt,
             present: newPresent,
+            leave: currentLeaves,
+            holiday: currentHolidays,
             bal: available, 
             lop: newLop,
-            comments: comments
+            comments: finalComment
         };
     });
     setAtt(newAtt);
-    alert(`Attendance auto-calculated for ${mo}!\n- Present Days updated\n- Balances drained for leaves/encashment\n- LOP applied if deficit.`);
+    alert(`Attendance auto-calculated based on Daily Records for ${mo}!`);
   };
 
   const saveAttendance = async () => {
@@ -895,13 +1071,21 @@ export default function App() {
             {ses.role === "a" && (
               <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button style={{ ...btn, background: "#1a1a2e", color: "#fff" }} onClick={openBulkPayroll}>+ Run Bulk Payroll</button>
-                <button style={{ ...btn, background: "#185FA5", color: "#fff" }} onClick={() => { setShowOffCycle(true); setShowBulk(false); }}>+ Off-Cycle Payroll</button>
+                <button style={{ ...btn, background: "#185FA5", color: "#fff", marginRight: 15 }} onClick={() => { setShowOffCycle(true); setShowBulk(false); }}>+ Off-Cycle Payroll</button>
                 <button style={{ ...btn, background: "#1D9E75", color: "#fff" }} onClick={() => {
-                  const rows = [["S.No", "Emp ID", "Employee", "Role", "Basic", "HRA", "Conv", "Med", "Inc", "Oth Earn", "Gross", "LOP", "Advance", "PT", "TDS", "Oth Ded", "Total Deductions", "Taxable Income", "Net", "Note"]];
+                  const head = ["S.No", "Emp ID", "Employee", "Role", "Basic", "HRA", "Conv", "Med", "Inc", "Oth Earn", "Gross", "LOP", "Advance", "PT", "TDS", "Oth Ded", "Total Deductions", "Taxable Income", "Net", "Note"];
+                  const rows = [];
                   let sno = 1;
                   emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, e.desig, r.basic, r.hra, r.conv, r.med, r.inc, r.oth, gr(r), r.lop, r.adv, r.pt, r.tds, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""])));
-                  exportCSV(rows, `Payroll_${mL(mo, fy)}.csv`);
-                }}>Export CSV</button>
+                  exportExcel([head, ...rows], `Payroll_${mL(mo, fy)}`);
+                }}>📊 Excel</button>
+                <button style={{ ...btn, background: "#d32f2f", color: "#fff" }} onClick={() => {
+                  const head = ["S.No", "Emp ID", "Employee", "Gross", "LOP", "Adv", "PT", "TDS", "Oth Ded", "Tot Ded", "Net", "Note"];
+                  const rows = [];
+                  let sno = 1;
+                  emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, f$(gr(r)), f$(r.lop), f$(r.adv), f$(r.pt), f$(r.tds), f$(r.othD || 0), f$(dd(r)), f$(np(r)), r.note || "-"])));
+                  setSlip(buildReportPdf("Monthly Payroll Report", `Payroll generated for ${mL(mo, fy)}`, head, rows));
+                }}>📄 PDF</button>
               </div>
             )}
           </div>
@@ -1023,11 +1207,20 @@ export default function App() {
         <div>
           <div style={{ marginBottom: 15, display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button style={{ ...btn, background: "#1D9E75", color: "#fff" }} onClick={() => {
-              const rows = [["S.No", "Emp ID", "Name", "Designation", "Email", "Phone", "Start Date", "End Date", "Status", "PAN", "Category", "Basic Salary", "Bank Details", "Comments", "Drive Link", "Leave Policy"]];
+              const head = ["S.No", "Emp ID", "Name", "Designation", "PAN", "Email", "Phone", "Start Date", "End Date", "Status", "Category", "Basic Salary", "Bank Details", "Comments", "Drive Link", "Leave Policy"];
+              const rows = [];
               let sno = 1;
-              emps.filter((e) => e.id !== "admin").forEach((e) => rows.push([sno++, e.id, e.name, e.desig, e.email, e.phone, e.start || "", e.end || "", e.status, e.pan, e.cat, e.basic, e.bank, e.comments || "", e.driveLink || "", e.leavePolicy || "Yes"]));
-              exportCSV(rows, `Employees_${fyL(fy)}.csv`);
-            }}>Download Excel</button>
+              emps.filter((e) => e.id !== "admin").forEach((e) => rows.push([sno++, e.id, e.name, e.desig, e.pan || "-", e.email, e.phone, e.start || "", e.end || "", e.status, e.cat, e.basic, e.bank, e.comments || "", e.driveLink || "", e.leavePolicy || "Yes"]));
+              exportExcel([head, ...rows], `Employees_${fyL(fy)}`);
+            }}>📊 Excel</button>
+            <button style={{ ...btn, background: "#d32f2f", color: "#fff", marginRight: 15 }} onClick={() => {
+              const head = ["S.No", "Emp ID", "Name", "Designation", "PAN", "Phone", "Start Date", "Status", "Bank Details"];
+              const rows = [];
+              let sno = 1;
+              emps.filter((e) => e.id !== "admin").forEach((e) => rows.push([sno++, e.id, e.name, e.desig, e.pan || "-", e.phone || "-", e.start || "-", e.status, e.bank || "-"]));
+              setSlip(buildReportPdf("Employee Roster", `Generated on ${new Date().toLocaleDateString()}`, head, rows));
+            }}>📄 PDF</button>
+
             <button style={{ ...btn, background: "#1a1a2e", color: "#fff" }} onClick={() => setShowAddEmp(!showAddEmp)}>+ Add Employee</button>
           </div>
           {showAddEmp && (
@@ -1037,6 +1230,7 @@ export default function App() {
                 <div><label style={lbl}>Emp ID</label><input style={sInp} value={nE.id} onChange={(e) => setNE({ ...nE, id: e.target.value })} /></div>
                 <div><label style={lbl}>Name</label><input style={sInp} value={nE.name} onChange={(e) => setNE({ ...nE, name: e.target.value })} /></div>
                 <div><label style={lbl}>Designation</label><input style={sInp} value={nE.desig} onChange={(e) => setNE({ ...nE, desig: e.target.value })} /></div>
+                <div><label style={lbl}>PAN</label><input style={sInp} value={nE.pan} onChange={(e) => setNE({ ...nE, pan: e.target.value })} /></div>
                 <div><label style={lbl}>Gross Basic Salary</label><input style={sInp} type="number" value={nE.basic} onChange={(e) => setNE({ ...nE, basic: e.target.value })} /></div>
                 <div><label style={lbl}>Leave Policy Apply</label><select style={sInp} value={nE.leavePolicy} onChange={(e) => setNE({ ...nE, leavePolicy: e.target.value })}><option>Yes</option><option>No</option></select></div>
                 <div><label style={lbl}>Phone</label><input style={sInp} value={nE.phone} onChange={(e) => setNE({ ...nE, phone: e.target.value })} /></div>
@@ -1054,6 +1248,7 @@ export default function App() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 15 }}>
                 <div><label style={lbl}>Phone</label><input style={sInp} value={editData.phone || ""} onChange={(e) => setEditData({ ...editData, phone: e.target.value })} /></div>
                 <div><label style={lbl}>Email</label><input style={sInp} value={editData.email || ""} onChange={(e) => setEditData({ ...editData, email: e.target.value })} /></div>
+                <div><label style={lbl}>PAN</label><input style={sInp} value={editData.pan || ""} onChange={(e) => setEditData({ ...editData, pan: e.target.value })} /></div>
                 <div><label style={lbl}>Bank Details</label><input style={sInp} value={editData.bank || ""} onChange={(e) => setEditData({ ...editData, bank: e.target.value })} /></div>
                 <div><label style={lbl}>Drive Link</label><input style={sInp} value={editData.driveLink || ""} onChange={(e) => setEditData({ ...editData, driveLink: e.target.value })} /></div>
                 <div><label style={lbl}>Start Date</label><input style={sInp} type="date" value={editData.start || ""} onChange={(e) => setEditData({ ...editData, start: e.target.value })} /></div>
@@ -1077,7 +1272,7 @@ export default function App() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
                 <tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}>
-                  <th style={thS}>Sl.No</th><th style={thS}>Employee ID</th><th style={thS}>Employee Name</th><th style={thS}>Leave Policy</th><th style={thS}>Email ID</th><th style={thS}>Phone Number</th><th style={thS}>Start Date</th><th style={thS}>End Date</th><th style={thS}>Status</th><th style={thS}>Bank Account</th><th style={thS}>Action</th>
+                  <th style={thS}>Sl.No</th><th style={thS}>Employee ID</th><th style={thS}>Employee Name</th><th style={thS}>PAN</th><th style={thS}>Leave Policy</th><th style={thS}>Email ID</th><th style={thS}>Phone Number</th><th style={thS}>Start Date</th><th style={thS}>End Date</th><th style={thS}>Status</th><th style={thS}>Bank Account</th><th style={thS}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -1086,6 +1281,7 @@ export default function App() {
                     <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
                     <td style={tdS}>{e.id}</td>
                     <td style={tdS}><b>{e.name}</b><br /><small style={{ color: "#888" }}>{e.desig}</small></td>
+                    <td style={tdS}>{e.pan || "-"}</td>
                     <td style={tdS}>
                         <span style={{ padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: "bold", background: e.leavePolicy === "Yes" ? "#e8f5e9" : "#fff8e1", color: e.leavePolicy === "Yes" ? "#1D9E75" : "#f57c00" }}>
                           {e.leavePolicy || "Yes"}
@@ -1121,184 +1317,269 @@ export default function App() {
           <div style={{ display: "flex", gap: 10, marginBottom: 20, alignItems: "center" }}>
              <select value={mo} onChange={(e) => setMo(e.target.value)} style={{ ...sInp, width: 150 }}>{MS.map((m) => (<option key={m} value={m}>{mL(m, fy)}</option>))}</select>
              
-             {ses.role === "a" && <button style={{ ...btn, background: "#8e44ad", color: "#fff", margin: 0, marginRight: 10 }} onClick={runLeaveAccrual}>⚡ Auto-Calc (Present, LOP, Bal)</button>}
-             
-             {ses.role === "a" && <button style={{ ...btn, background: "#1a1a2e", color: "#fff", margin: 0 }} onClick={saveAttendance}>Save Attendance</button>}
+             {/* SUB-TAB TOGGLES */}
+             <div style={{ display: "flex", background: "#fff", borderRadius: 6, border: "1px solid #ddd", overflow: "hidden", marginLeft: 20 }}>
+                <button style={{ padding: "8px 16px", border: "none", cursor: "pointer", fontWeight: "bold", background: attSubTab === "daily" ? "#1a1a2e" : "#fff", color: attSubTab === "daily" ? "#fff" : "#666" }} onClick={() => setAttSubTab("daily")}>📅 Daily Marking</button>
+                <button style={{ padding: "8px 16px", border: "none", cursor: "pointer", fontWeight: "bold", background: attSubTab === "monthly" ? "#1a1a2e" : "#fff", color: attSubTab === "monthly" ? "#fff" : "#666" }} onClick={() => setAttSubTab("monthly")}>📊 Monthly Report</button>
+             </div>
           </div>
 
-          <div style={{background: "#f3e5f5", color: "#8e44ad", padding: "10px", borderRadius: 4, marginBottom: 15, fontSize: 12, fontWeight: "bold"}}>
-              ✓ Enter Holidays & Leaves, then click 'Auto-Calc' to instantly generate Present Days, Balances, and LOP based on policy!
-          </div>
+          {/* === DAILY MARKING SUB-TAB === */}
+          {attSubTab === "daily" && (
+            <div style={card}>
+               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <h3 style={{ margin: 0 }}>Daily Attendance Calendar</h3>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                     <label style={{ fontWeight: "bold", fontSize: 13 }}>Select Date:</label>
+                     <input type="date" style={{ ...sInp, width: "auto" }} value={markDate} onChange={(e) => setMarkDate(e.target.value)} />
+                     {ses.role === "a" && <button style={{ ...btn, background: "#1D9E75", color: "#fff", margin: 0 }} onClick={saveDailyAttendance}>Save Daily Attendance</button>}
+                  </div>
+               </div>
+               
+               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead><tr style={{ background: "#f4f4f4", textAlign: "left" }}><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Status</th><th style={thS}>Reason (Required for Leave/Absent)</th></tr></thead>
+                  <tbody>
+                     {emps.filter((e) => e.status === "Active" && e.id !== "admin" && (!ses.id || e.id === ses.id || ses.role === "a")).map(e => (
+                        <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
+                           <td style={tdS}>{e.id}</td>
+                           <td style={tdS}>{e.name}</td>
+                           <td style={tdS}>
+                              <select 
+                                 style={{ ...sInp, width: 120, background: dailyForm[e.id]?.status === "Present" ? "#e8f5e9" : dailyForm[e.id]?.status === "Holiday" ? "#e3f2fd" : "#ffebee" }} 
+                                 value={dailyForm[e.id]?.status || "Present"} 
+                                 disabled={ses.role !== "a"}
+                                 onChange={(evt) => setDailyForm({...dailyForm, [e.id]: { ...dailyForm[e.id], status: evt.target.value }})}
+                              >
+                                 <option>Present</option>
+                                 <option>WFH</option>
+                                 <option>Leave</option>
+                                 <option>Absent</option>
+                                 <option>Holiday</option>
+                              </select>
+                           </td>
+                           <td style={tdS}>
+                              {(dailyForm[e.id]?.status === "Leave" || dailyForm[e.id]?.status === "Absent") ? (
+                                 <input 
+                                    style={{ ...sInp, border: "1px solid red" }} 
+                                    placeholder="Enter reason..." 
+                                    value={dailyForm[e.id]?.reason || ""}
+                                    disabled={ses.role !== "a"}
+                                    onChange={(evt) => setDailyForm({...dailyForm, [e.id]: { ...dailyForm[e.id], reason: evt.target.value }})}
+                                 />
+                              ) : <span style={{ color: "#aaa", fontSize: 11 }}>N/A</span>}
+                           </td>
+                        </tr>
+                     ))}
+                  </tbody>
+               </table>
+            </div>
+          )}
 
-          <div style={{ ...card, padding: 0, overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP (Days)</th><th>Comments</th>{ses.role === "a" && <th>Action</th>}</tr></thead>
-              <tbody>{emps.filter((e) => ses.role === "a" ? isActiveInMonth(e, mo, fy) : e.id === ses.id).map((e, idx) => {
-                const a = att[e.id]?.[fy]?.[mo] || {};
-                const wDays = getWD(mo, fy);
-                
-                const carryOver = getCarryOver(e.id);
-                const isEncashMonth = ["Jan", "Feb", "Mar"].includes(mo);
-                const hasEncash = a.comments?.toLowerCase().includes("encash");
-                const pureComment = a.comments ? a.comments.replace(/\d+\s*leaves?\s*encashed\s*\|?\s*/i, '').replace(/^\|\s*/, '').trim() : "";
+          {/* === MONTHLY REPORT SUB-TAB === */}
+          {attSubTab === "monthly" && (
+           <>
+            <div style={{ display: "flex", gap: 10, marginBottom: 15 }}>
+              {ses.role === "a" && <button style={{ ...btn, background: "#8e44ad", color: "#fff", margin: 0 }} onClick={runLeaveAccrual}>⚡ Auto-Calc (Pull from Daily Logs)</button>}
+              {ses.role === "a" && <button style={{ ...btn, background: "#1a1a2e", color: "#fff", margin: 0 }} onClick={saveAttendance}>Save Monthly Report</button>}
+            </div>
+            
+            <div style={{background: "#f3e5f5", color: "#8e44ad", padding: "10px", borderRadius: 4, marginBottom: 15, fontSize: 12, fontWeight: "bold"}}>
+                ✓ Click 'Auto-Calc' to instantly count the Daily Calendar records for {mo} and populate this grid!
+            </div>
 
-                return (
-                  <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{e.id}</td><td style={tdS}>{e.name}</td>
-                    <td style={{ ...tdS, fontWeight: "bold", textAlign: "center", color: "#185FA5" }}>{wDays}</td>
-                    <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.present !== undefined && a.present !== null ? a.present : ""} onChange={(x) => updAtt(e.id, mo, "present", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.holiday !== undefined && a.holiday !== null ? a.holiday : ""} onChange={(x) => updAtt(e.id, mo, "holiday", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.leave !== undefined && a.leave !== null ? a.leave : ""} onChange={(x) => updAtt(e.id, mo, "leave", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 60, background: "#f8f9fa" }} disabled={ses.role !== "a"} type="number" value={a.bal !== undefined && a.bal !== null ? a.bal : ""} onChange={(x) => updAtt(e.id, mo, "bal", x.target.value)} /></td>
-                    <td><input style={{ ...sInp, minWidth: 60, background: "#ffebee" }} disabled={ses.role !== "a"} type="number" value={a.lop !== undefined && a.lop !== null ? a.lop : ""} onChange={(x) => updAtt(e.id, mo, "lop", x.target.value)} /></td>
-                    
-                    <td style={{minWidth: 200}}>
-                      {isEncashMonth && carryOver > 0 && ses.role === "a" && (
-                        <div style={{ background: "#fff8e1", padding: "4px 8px", borderRadius: 4, marginBottom: 5, border: "1px solid #ffc107" }}>
-                          <div style={{ fontSize: 10, fontWeight: "bold", marginBottom: 3, color: "#f57c00" }}>Leave Encash (Max: {carryOver})</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                            <select 
-                              style={{ padding: 2, fontSize: 11, borderRadius: 3, border: "1px solid #ccc" }}
-                              value={hasEncash ? "Yes" : "No"}
-                              onChange={(evt) => {
-                                if (evt.target.value === "Yes") {
-                                  const newC = pureComment ? `${carryOver} leaves encashed | ${pureComment}` : `${carryOver} leaves encashed`;
-                                  updAtt(e.id, mo, "comments", newC);
-                                } else {
-                                  updAtt(e.id, mo, "comments", pureComment);
-                                }
-                              }}
-                            >
-                              <option>No</option>
-                              <option>Yes</option>
-                            </select>
-                            {hasEncash && (
-                              <input 
-                                type="number" 
-                                style={{ padding: 2, fontSize: 11, borderRadius: 3, border: "1px solid #ccc", width: 40 }}
-                                max={carryOver}
-                                min={0}
-                                value={a.comments?.match(/(\d+)\s*leave/i)?.[1] || ""}
+            <div style={{ ...card, padding: 0, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead><tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Name</th><th style={thS}>Work Days</th><th>Present</th><th>Holidays</th><th>Leave</th><th>Balance</th><th>LOP (Days)</th><th>Comments</th>{ses.role === "a" && <th>Action</th>}</tr></thead>
+                <tbody>{emps.filter((e) => ses.role === "a" ? isActiveInMonth(e, mo, fy) : e.id === ses.id).map((e, idx) => {
+                  const a = att[e.id]?.[fy]?.[mo] || {};
+                  const wDays = getWD(mo, fy);
+                  
+                  const carryOver = getCarryOver(e.id);
+                  const isEncashMonth = ["Jan", "Feb", "Mar"].includes(mo);
+                  const hasEncash = a.comments?.toLowerCase().includes("encash");
+                  const pureComment = a.comments ? a.comments.replace(/\d+\s*leaves?\s*encashed\s*\|?\s*/i, '').replace(/^\|\s*/, '').trim() : "";
+
+                  return (
+                    <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td><td style={{ ...tdS, color: "#666" }}>{e.id}</td><td style={tdS}>{e.name}</td>
+                      <td style={{ ...tdS, fontWeight: "bold", textAlign: "center", color: "#185FA5" }}>{wDays}</td>
+                      <td><input style={{ ...sInp, minWidth: 60 }} disabled={ses.role !== "a"} type="number" value={a.present !== undefined && a.present !== null ? a.present : ""} onChange={(x) => updAtt(e.id, mo, "present", x.target.value)} /></td>
+                      <td><input style={{ ...sInp, minWidth: 60, background: "#f0f0f0" }} disabled={ses.role !== "a"} type="number" value={a.holiday !== undefined && a.holiday !== null ? a.holiday : ""} onChange={(x) => updAtt(e.id, mo, "holiday", x.target.value)} title="Auto-filled from Daily Logs" /></td>
+                      <td><input style={{ ...sInp, minWidth: 60, background: "#f0f0f0" }} disabled={ses.role !== "a"} type="number" value={a.leave !== undefined && a.leave !== null ? a.leave : ""} onChange={(x) => updAtt(e.id, mo, "leave", x.target.value)} title="Auto-filled from Daily Logs" /></td>
+                      <td>
+                        {e.leavePolicy === "No" ? (
+                          <input style={{ ...sInp, minWidth: 60, background: "#f8f9fa", textAlign: "center" }} disabled value="NA" />
+                        ) : (
+                          <input style={{ ...sInp, minWidth: 60, background: "#f8f9fa" }} disabled={ses.role !== "a"} type="number" value={a.bal !== undefined && a.bal !== null ? a.bal : ""} onChange={(x) => updAtt(e.id, mo, "bal", x.target.value)} />
+                        )}
+                      </td>
+                      <td><input style={{ ...sInp, minWidth: 60, background: "#ffebee" }} disabled={ses.role !== "a"} type="number" value={a.lop !== undefined && a.lop !== null ? a.lop : ""} onChange={(x) => updAtt(e.id, mo, "lop", x.target.value)} /></td>
+                      
+                      <td style={{minWidth: 200}}>
+                        {isEncashMonth && carryOver > 0 && e.leavePolicy !== "No" && ses.role === "a" && (
+                          <div style={{ background: "#fff8e1", padding: "4px 8px", borderRadius: 4, marginBottom: 5, border: "1px solid #ffc107" }}>
+                            <div style={{ fontSize: 10, fontWeight: "bold", marginBottom: 3, color: "#f57c00" }}>Leave Encash (Max: {carryOver})</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <select 
+                                style={{ padding: 2, fontSize: 11, borderRadius: 3, border: "1px solid #ccc" }}
+                                value={hasEncash ? "Yes" : "No"}
                                 onChange={(evt) => {
-                                  let v = Number(evt.target.value);
-                                  if (v > carryOver) v = carryOver;
-                                  if (v < 0) v = 0;
-                                  const newC = pureComment ? `${v} leaves encashed | ${pureComment}` : `${v} leaves encashed`;
-                                  updAtt(e.id, mo, "comments", newC);
+                                  if (evt.target.value === "Yes") {
+                                    const newC = pureComment ? `${carryOver} leaves encashed | ${pureComment}` : `${carryOver} leaves encashed`;
+                                    updAtt(e.id, mo, "comments", newC);
+                                  } else {
+                                    updAtt(e.id, mo, "comments", pureComment);
+                                  }
                                 }}
-                              />
-                            )}
+                              >
+                                <option>No</option>
+                                <option>Yes</option>
+                              </select>
+                              {hasEncash && (
+                                <input 
+                                  type="number" 
+                                  style={{ padding: 2, fontSize: 11, borderRadius: 3, border: "1px solid #ccc", width: 40 }}
+                                  max={carryOver}
+                                  min={0}
+                                  value={a.comments?.match(/(\d+)\s*leave/i)?.[1] || ""}
+                                  onChange={(evt) => {
+                                    let v = Number(evt.target.value);
+                                    if (v > carryOver) v = carryOver;
+                                    if (v < 0) v = 0;
+                                    const newC = pureComment ? `${v} leaves encashed | ${pureComment}` : `${v} leaves encashed`;
+                                    updAtt(e.id, mo, "comments", newC);
+                                  }}
+                                />
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        )}
+                        <input style={{ ...sInp, width: "100%" }} disabled={ses.role !== "a"} placeholder="General Comments" value={pureComment} onChange={(x) => {
+                          const v = x.target.value;
+                          const encashStr = hasEncash ? (a.comments.match(/\d+\s*leaves?\s*encashed/i)?.[0] || "") : "";
+                          const newC = encashStr ? (v ? `${encashStr} | ${v}` : encashStr) : v;
+                          updAtt(e.id, mo, "comments", newC);
+                        }} />
+                      </td>
+                      {ses.role === "a" && (
+                          <td>
+                            <button style={{ ...btn, padding: "4px 8px", color: "#d32f2f", fontSize: 11, border: "1px solid #ffcdd2" }} onClick={() => {
+                              if(confirm("Clear this entire row?")) updAtt(e.id, mo, "CLEAR_ALL");
+                            }}>Clear</button>
+                          </td>
                       )}
-                      <input style={{ ...sInp, width: "100%" }} disabled={ses.role !== "a"} placeholder="General Comments" value={pureComment} onChange={(x) => {
-                        const v = x.target.value;
-                        const encashStr = hasEncash ? (a.comments.match(/\d+\s*leaves?\s*encashed/i)?.[0] || "") : "";
-                        const newC = encashStr ? (v ? `${encashStr} | ${v}` : encashStr) : v;
-                        updAtt(e.id, mo, "comments", newC);
-                      }} />
-                    </td>
-                    {ses.role === "a" && (
-                        <td>
-                          <button style={{ ...btn, padding: "4px 8px", color: "#d32f2f", fontSize: 11, border: "1px solid #ffcdd2" }} onClick={() => {
-                            if(confirm("Clear this entire row?")) updAtt(e.id, mo, "CLEAR_ALL");
-                          }}>Clear</button>
-                        </td>
-                    )}
-                  </tr>
-                );
-              })}</tbody>
-            </table>
-          </div>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            </div>
 
-          {ses.role === "a" && (
-            <>
-              {/* LEAVE REGISTER */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 30, marginBottom: 15, alignItems: "center" }}>
-                <h3 style={{ margin: 0 }}>Leave Register ({fyL(fy)})</h3>
-              </div>
-              <div style={{ ...card, padding: 0, overflowX: "auto", marginBottom: 40 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead><tr style={{ background: "#1a1a2e", color: "#fff", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th>{MS.map((m) => <th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
-                  <tbody>
-                    {emps.filter((e) => e.id !== "admin" && MS.some(m => isActiveInMonth(e, m, fy))).map((e, idx) => (
-                      <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
-                        <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
-                        <td style={{ ...tdS, color: "#666" }}>{e.id}</td>
-                        <td style={tdS}><b>{e.name}</b></td>
-                        {MS.map((m) => {
-                          const isActive = isActiveInMonth(e, m, fy);
-                          const leaveVal = att[e.id]?.[fy]?.[m]?.leave;
-                          return <td key={m} style={tdS}>{(isActive && leaveVal > 0) ? `${leaveVal} L` : "-"}</td>;
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* ATTENDANCE LEDGER */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 15, alignItems: "center" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <h3 style={{ margin: 0 }}>Attendance Ledger</h3>
-                  <select style={{ ...sInp, width: 130, margin: 0, padding: "4px 8px" }} value={attLedgerMo} onChange={(e) => setAttLedgerMo(e.target.value)}>
-                    <option value="">All Months</option>
-                    {MS.map((m) => <option key={m} value={m}>{mL(m, fy)}</option>)}
-                  </select>
+            {ses.role === "a" && (
+              <>
+                {/* LEAVE REGISTER */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 30, marginBottom: 15, alignItems: "center" }}>
+                  <h3 style={{ margin: 0 }}>Leave Register ({fyL(fy)})</h3>
                 </div>
-                <button style={{ ...btn, background: "#1D9E75", color: "#fff", border: "none", margin: 0 }} onClick={() => {
-                  const rows = [["S.No", "Emp ID", "Employee", "Month", "Work Days", "Present", "Holidays", "Leave", "Balance", "LOP", "Comments"]];
-                  let sno = 1;
-                  emps.filter((e) => e.id !== "admin").forEach((e) => MS.forEach((m) => {
-                    if (attLedgerMo && m !== attLedgerMo) return;
-                    const a = att[e.id]?.[fy]?.[m];
-                    if (isActiveInMonth(e, m, fy) && a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || (a.comments && a.comments.trim() !== ""))) {
-                      rows.push([sno++, e.id, e.name, mL(m, fy), getWD(m, fy), a.present !== null ? a.present : "-", a.holiday !== null ? a.holiday : "-", a.leave !== null ? a.leave : "-", a.bal !== null ? a.bal : "-", a.lop !== null ? a.lop : "-", a.comments || ""]);
-                    }
-                  }));
-                  exportCSV(rows, `Attendance_Ledger_${attLedgerMo || "All"}_${fyL(fy)}.csv`);
-                }}>Download Excel</button>
-              </div>
-              <div style={{ ...card, padding: 0, overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead><tr style={{ background: "#f4f6f8", textAlign: "left", whiteSpace: "nowrap" }}>
-                    <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Work Days</th><th style={thS}>Present</th><th style={thS}>Holidays</th><th style={thS}>Leave</th><th style={thS}>Balance</th><th style={thS}>LOP</th><th style={thS}>Comments</th><th style={thS}>Action</th>
-                  </tr></thead>
-                  <tbody>
-                    {emps.filter((e) => e.id !== "admin")
-                      .flatMap((e) => MS.filter(m => !attLedgerMo || m === attLedgerMo).map((m) => ({ e, m, a: att[e.id]?.[fy]?.[m] })))
-                      .filter((x) => isActiveInMonth(x.e, x.m, fy) && x.a && (x.a.present !== null || x.a.leave !== null || x.a.holiday !== null || x.a.lop !== null || (x.a.comments && x.a.comments.trim() !== "")))
-                      .map((item, idx) => (
-                      <tr key={item.e.id + item.m} style={{ borderBottom: "1px solid #eee" }}>
-                        <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
-                        <td style={{ ...tdS, color: "#666" }}>{item.e.id}</td>
-                        <td style={tdS}><b>{item.e.name}</b></td>
-                        <td style={tdS}>{mL(item.m, fy)}</td>
-                        <td style={{ ...tdS, color: "#185FA5", fontWeight: "bold" }}>{getWD(item.m, fy)}</td>
-                        <td style={tdS}>{item.a.present !== null ? item.a.present : "-"}</td>
-                        <td style={tdS}>{item.a.holiday !== null ? item.a.holiday : "-"}</td>
-                        <td style={tdS}>{item.a.leave !== null ? item.a.leave : "-"}</td>
-                        <td style={tdS}>{item.a.bal !== null ? item.a.bal : "-"}</td>
-                        <td style={tdS}>{item.a.lop !== null ? item.a.lop : "-"}</td>
-                        <td style={{ ...tdS, fontSize: 11, color: "#666" }}>{item.a.comments || "-"}</td>
-                        <td style={tdS}>
-                          <button style={{ ...btn, padding: "2px 8px", color: "red", fontSize: 11 }} onClick={async () => {
-                            if (confirm("Delete this record permanently?")) {
-                              const { error } = await supabase.from("gits_attendance").delete().eq("emp_id", item.e.id).eq("fy", fy).eq("mo", item.m);
-                              if (error) {
-                                  alert("Database Error: " + error.message);
-                              } else {
-                                  updAtt(item.e.id, item.m, "CLEAR_ALL");
+                <div style={{ ...card, padding: 0, overflowX: "auto", marginBottom: 40 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead><tr style={{ background: "#1a1a2e", color: "#fff", textAlign: "left", whiteSpace: "nowrap" }}><th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th>{MS.map((m) => <th key={m} style={thS}>{mL(m, fy)}</th>)}</tr></thead>
+                    <tbody>
+                      {emps.filter((e) => e.id !== "admin" && MS.some(m => isActiveInMonth(e, m, fy))).map((e, idx) => (
+                        <tr key={e.id} style={{ borderBottom: "1px solid #eee" }}>
+                          <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
+                          <td style={{ ...tdS, color: "#666" }}>{e.id}</td>
+                          <td style={tdS}><b>{e.name}</b></td>
+                          {MS.map((m) => {
+                            const isActive = isActiveInMonth(e, m, fy);
+                            const leaveVal = att[e.id]?.[fy]?.[m]?.leave;
+                            return <td key={m} style={tdS}>{(isActive && leaveVal > 0) ? `${leaveVal} L` : "-"}</td>;
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ATTENDANCE LEDGER */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 15, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <h3 style={{ margin: 0 }}>Attendance Ledger</h3>
+                    <select style={{ ...sInp, width: 130, margin: 0, padding: "4px 8px" }} value={attLedgerMo} onChange={(e) => setAttLedgerMo(e.target.value)}>
+                      <option value="">All Months</option>
+                      {MS.map((m) => <option key={m} value={m}>{mL(m, fy)}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: "flex" }}>
+                    <button style={{ ...btn, background: "#1D9E75", color: "#fff", margin: 0, marginRight: 5 }} onClick={() => {
+                      const head = ["S.No", "Emp ID", "Employee", "Month", "Work Days", "Present", "Holidays", "Leave", "Balance", "LOP", "Comments"];
+                      const rows = [];
+                      let sno = 1;
+                      emps.filter((e) => e.id !== "admin").forEach((e) => MS.forEach((m) => {
+                        if (attLedgerMo && m !== attLedgerMo) return;
+                        const a = att[e.id]?.[fy]?.[m];
+                        if (isActiveInMonth(e, m, fy) && a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || (a.comments && a.comments.trim() !== ""))) {
+                          rows.push([sno++, e.id, e.name, mL(m, fy), getWD(m, fy), a.present !== null ? a.present : "-", a.holiday !== null ? a.holiday : "-", a.leave !== null ? a.leave : "-", e.leavePolicy === "No" ? "NA" : (a.bal !== null ? a.bal : "-"), a.lop !== null ? a.lop : "-", a.comments || ""]);
+                        }
+                      }));
+                      exportExcel([head, ...rows], `Attendance_Ledger_${attLedgerMo || "All"}_${fyL(fy)}`);
+                    }}>📊 Excel</button>
+                    <button style={{ ...btn, background: "#d32f2f", color: "#fff", margin: 0 }} onClick={() => {
+                      const head = ["S.No", "Emp ID", "Employee", "Month", "W.Days", "Present", "Hol", "Leave", "Bal", "LOP", "Comments"];
+                      const rows = [];
+                      let sno = 1;
+                      emps.filter((e) => e.id !== "admin").forEach((e) => MS.forEach((m) => {
+                        if (attLedgerMo && m !== attLedgerMo) return;
+                        const a = att[e.id]?.[fy]?.[m];
+                        if (isActiveInMonth(e, m, fy) && a && (a.present !== null || a.leave !== null || a.holiday !== null || a.lop !== null || (a.comments && a.comments.trim() !== ""))) {
+                          rows.push([sno++, e.id, e.name, mL(m, fy), getWD(m, fy), a.present !== null ? a.present : "-", a.holiday !== null ? a.holiday : "-", a.leave !== null ? a.leave : "-", e.leavePolicy === "No" ? "NA" : (a.bal !== null ? a.bal : "-"), a.lop !== null ? a.lop : "-", a.comments || ""]);
+                        }
+                      }));
+                      setSlip(buildReportPdf("Attendance Ledger", `Reporting Period: ${attLedgerMo || "All Months"} FY ${fyL(fy)}`, head, rows));
+                    }}>📄 PDF</button>
+                  </div>
+                </div>
+                <div style={{ ...card, padding: 0, overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead><tr style={{ background: "#f4f6f8", textAlign: "left", whiteSpace: "nowrap" }}>
+                      <th style={thS}>S.No</th><th style={thS}>Emp ID</th><th style={thS}>Employee</th><th style={thS}>Month</th><th style={thS}>Work Days</th><th style={thS}>Present</th><th style={thS}>Holidays</th><th style={thS}>Leave</th><th style={thS}>Balance</th><th style={thS}>LOP</th><th style={thS}>Comments</th><th style={thS}>Action</th>
+                    </tr></thead>
+                    <tbody>
+                      {emps.filter((e) => e.id !== "admin")
+                        .flatMap((e) => MS.filter(m => !attLedgerMo || m === attLedgerMo).map((m) => ({ e, m, a: att[e.id]?.[fy]?.[m] })))
+                        .filter((x) => isActiveInMonth(x.e, x.m, fy) && x.a && (x.a.present !== null || x.a.leave !== null || x.a.holiday !== null || x.a.lop !== null || (x.a.comments && x.a.comments.trim() !== "")))
+                        .map((item, idx) => (
+                        <tr key={item.e.id + item.m} style={{ borderBottom: "1px solid #eee" }}>
+                          <td style={{ ...tdS, color: "#666" }}>{idx + 1}</td>
+                          <td style={{ ...tdS, color: "#666" }}>{item.e.id}</td>
+                          <td style={tdS}><b>{item.e.name}</b></td>
+                          <td style={tdS}>{mL(item.m, fy)}</td>
+                          <td style={{ ...tdS, color: "#185FA5", fontWeight: "bold" }}>{getWD(item.m, fy)}</td>
+                          <td style={tdS}>{item.a.present !== null ? item.a.present : "-"}</td>
+                          <td style={tdS}>{item.a.holiday !== null ? item.a.holiday : "-"}</td>
+                          <td style={tdS}>{item.a.leave !== null ? item.a.leave : "-"}</td>
+                          <td style={tdS}>{item.e.leavePolicy === "No" ? "NA" : (item.a.bal !== null ? item.a.bal : "-")}</td>
+                          <td style={tdS}>{item.a.lop !== null ? item.a.lop : "-"}</td>
+                          <td style={{ ...tdS, fontSize: 11, color: "#666" }}>{item.a.comments || "-"}</td>
+                          <td style={tdS}>
+                            <button style={{ ...btn, padding: "2px 8px", color: "red", fontSize: 11 }} onClick={async () => {
+                              if (confirm("Delete this record permanently?")) {
+                                const { error } = await supabase.from("gits_attendance").delete().eq("emp_id", item.e.id).eq("fy", fy).eq("mo", item.m);
+                                if (error) {
+                                    alert("Database Error: " + error.message);
+                                } else {
+                                    updAtt(item.e.id, item.m, "CLEAR_ALL");
+                                }
                               }
-                            }
-                          }}>Del</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+                            }}>Del</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+           </>
           )}
         </div>
       )}
@@ -1311,7 +1592,28 @@ export default function App() {
             {ses.role === "a" && <select style={sInp} value={lEmp} onChange={(e) => setLEmp(e.target.value)}><option value="">All Employees</option>{emps.filter((e) => e.id !== "admin").map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}</select>}
             <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
               {ses.role === "a" && <button style={{ ...btn, background: "#1a1a2e", color: "#fff" }} onClick={() => { setEditLedger(null); setNEn({ m: "Apr", t: "s", basic: 0, hra: 0, conv: 800, med: 1500, inc: 0, oth: 0, lop: 0, adv: 0, pt: 200, tds: 0, othD: 0, note: "" }); setShowAddEntry(true); }}>+ Add Entry</button>}
-              <button style={{ ...btn, background: "#1D9E75", color: "#fff" }} onClick={handleExportLedger}>Download Excel</button>
+              <button style={{ ...btn, background: "#1D9E75", color: "#fff" }} onClick={() => {
+                const head = ["S.No", "Emp ID", "Employee", "Month", "Type", "Basic", "HRA", "Conv", "Med", "Incentive", "Other Earnings", "Gross Amount", "LOP", "Staff Advance", "Prof Tax", "TDS", "Other Deductions", "Total Deductions", "Taxable Income", "Net Amount", "Note/Comments"];
+                const rows = [];
+                const tEmps = ses.role === "a" ? (lEmp ? emps.filter((e) => e.id === lEmp) : emps.filter((e) => e.id !== "admin")) : [myE];
+                let sno = 1;
+                tEmps.forEach((e) => {
+                  if (!e) return;
+                  (pay[e.id]?.[fy] || []).filter((r) => !mo || r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, mL(r.m, fy), r.t === "s" ? "Salary" : "Incentive", r.basic || 0, r.hra || 0, r.conv || 0, r.med || 0, r.inc || 0, r.oth || 0, gr(r), r.lop || 0, r.adv || 0, r.pt || 0, r.tds || 0, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""]));
+                });
+                exportExcel([head, ...rows], `Ledger_${fyL(fy)}`);
+              }}>📊 Excel</button>
+              <button style={{ ...btn, background: "#d32f2f", color: "#fff" }} onClick={() => {
+                const head = ["S.No", "Emp ID", "Employee", "Month", "Basic", "Gross", "LOP", "Adv", "PT", "TDS", "Oth Ded", "Tot Ded", "Net", "Note"];
+                const rows = [];
+                const tEmps = ses.role === "a" ? (lEmp ? emps.filter((e) => e.id === lEmp) : emps.filter((e) => e.id !== "admin")) : [myE];
+                let sno = 1;
+                tEmps.forEach((e) => {
+                  if (!e) return;
+                  (pay[e.id]?.[fy] || []).filter((r) => !mo || r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, mL(r.m, fy), f$(r.basic), f$(gr(r)), f$(r.lop), f$(r.adv), f$(r.pt), f$(r.tds), f$(r.othD || 0), f$(dd(r)), f$(np(r)), r.note || "-"]));
+                });
+                setSlip(buildReportPdf("Financial Ledger Report", `Reporting Period: FY ${fyL(fy)}`, head, rows));
+              }}>📄 PDF</button>
             </div>
           </div>
           {showAddEntry && ses.role === "a" && (
