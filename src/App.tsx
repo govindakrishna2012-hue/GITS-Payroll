@@ -13,6 +13,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const CO = "GATEWAY IT SOLUTIONS";
 const AD = "FLAT NO.201, KARRE COTTAGE, VI PHASE, KPHB COLONY, HYDERABAD-500072.";
 const MS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+const CAL_MS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const SEC_QS = [
   "What city were you born in?",
   "What is your mother's maiden name?",
@@ -23,7 +24,7 @@ const SEC_QS = [
 // Fallback logic for initialization
 const getInitState = () => {
   const d = new Date();
-  const mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+  const mo = CAL_MS[d.getMonth()];
   const y = d.getFullYear();
   const fy = ["Jan", "Feb", "Mar"].includes(mo) ? String(y - 1) : String(y);
   return { mo, fy };
@@ -52,7 +53,7 @@ const isActiveInMonth = (emp, mStr, yStr) => {
   if (emp.id === "admin") return false;
 
   const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
-  const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mStr);
+  const mIdx = CAL_MS.indexOf(mStr);
   
   const mStart = `${y}-${String(mIdx + 1).padStart(2, '0')}-01`;
   const lastDay = new Date(y, mIdx + 1, 0).getDate();
@@ -68,7 +69,7 @@ const isActiveInMonth = (emp, mStr, yStr) => {
 const getWD = (mStr, yStr) => {
   if (!yStr) return 0;
   const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
-  const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mStr);
+  const mIdx = CAL_MS.indexOf(mStr);
   const daysInMonth = new Date(y, mIdx + 1, 0).getDate();
   let count = 0;
   for (let d = 1; d <= daysInMonth; d++) {
@@ -82,7 +83,7 @@ const getWD = (mStr, yStr) => {
 const getCalendarDays = (mStr, yStr) => {
   if (!yStr) return 30;
   const y = ["Jan", "Feb", "Mar"].includes(mStr) ? parseInt(yStr) + 1 : parseInt(yStr);
-  const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mStr);
+  const mIdx = CAL_MS.indexOf(mStr);
   return new Date(y, mIdx + 1, 0).getDate();
 };
 
@@ -393,16 +394,14 @@ export default function App() {
       let latestFy = null;
 
       const d = new Date();
-      const curMoStr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
+      const curMoStr = CAL_MS[d.getMonth()];
       const curYStr = d.getFullYear();
       const curFyStr = ["Jan", "Feb", "Mar"].includes(curMoStr) ? String(curYStr - 1) : String(curYStr);
       
-      // Safety Cap: Ignore any test data created more than 1 month in the future
       const curScoreLimit = parseInt(curFyStr) * 100 + MS.indexOf(curMoStr) + 1;
 
       const evalData = (arr, isLedger) => {
         arr.forEach(r => {
-          // Check that row actually has data (ignore completely blank cleared rows)
           const hasData = isLedger 
             ? (r.basic > 0 || r.inc > 0 || r.oth > 0 || r.lop > 0 || (r.note && r.note.trim() !== ""))
             : (r.present !== null || r.leave !== null || r.holiday !== null || r.lop !== null || (r.comments && r.comments.trim() !== ""));
@@ -801,7 +800,7 @@ export default function App() {
     if (!confirm(`Auto-calculate from Daily Records for ${mo}? This will overwrite manual Leave/Holiday counts.`)) return;
 
     const yNum = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
-    const mIdxStr = String(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mo) + 1).padStart(2, '0');
+    const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0');
     const targetPrefix = `${yNum}-${mIdxStr}`; 
 
     const newAtt = { ...att };
@@ -1372,6 +1371,83 @@ export default function App() {
                      ))}
                   </tbody>
                </table>
+
+               {ses.role === "a" && (
+                 <div style={{ marginTop: 30, borderTop: "2px solid #eee", paddingTop: 20 }}>
+                   <h3 style={{ margin: "0 0 15px 0" }}>Daily Attendance Reports</h3>
+                   <div style={{ display: "flex", gap: 15, flexWrap: "wrap" }}>
+                     
+                     <div style={{ background: "#f8f9fa", padding: 15, borderRadius: 6, border: "1px solid #ddd", flex: 1, minWidth: 250 }}>
+                       <h4 style={{ margin: "0 0 10px 0", color: "#185FA5" }}>For Selected Date: {fmtDate(markDate)}</h4>
+                       <div style={{ display: "flex", gap: 10 }}>
+                          <button style={{ ...btn, background: "#1D9E75", color: "#fff", flex: 1 }} onClick={() => {
+                             const head = ["S.No", "Emp ID", "Employee", "Date", "Status", "Reason"];
+                             const rows = [];
+                             let sno = 1;
+                             emps.filter(e => e.id !== "admin").forEach(e => {
+                               const dLog = dailyAtt.find(r => r.emp_id === e.id && r.date === markDate);
+                               if (dLog) rows.push([sno++, e.id, e.name, fmtDate(markDate), dLog.status, dLog.reason || "-"]);
+                             });
+                             if (!rows.length) return alert("No records found for " + fmtDate(markDate));
+                             exportExcel([head, ...rows], `Daily_Attendance_${markDate}`);
+                          }}>📊 Excel</button>
+                          <button style={{ ...btn, background: "#d32f2f", color: "#fff", flex: 1 }} onClick={() => {
+                             const head = ["S.No", "Emp ID", "Employee", "Date", "Status", "Reason"];
+                             const rows = [];
+                             let sno = 1;
+                             emps.filter(e => e.id !== "admin").forEach(e => {
+                               const dLog = dailyAtt.find(r => r.emp_id === e.id && r.date === markDate);
+                               if (dLog) rows.push([sno++, e.id, e.name, fmtDate(markDate), dLog.status, dLog.reason || "-"]);
+                             });
+                             if (!rows.length) return alert("No records found for " + fmtDate(markDate));
+                             setSlip(buildReportPdf("Daily Attendance Report", `Date: ${fmtDate(markDate)}`, head, rows));
+                          }}>📄 PDF</button>
+                       </div>
+                     </div>
+
+                     <div style={{ background: "#f8f9fa", padding: 15, borderRadius: 6, border: "1px solid #ddd", flex: 1, minWidth: 250 }}>
+                       <h4 style={{ margin: "0 0 10px 0", color: "#8e44ad" }}>For Entire Month: {mo} {["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : fy}</h4>
+                       <div style={{ display: "flex", gap: 10 }}>
+                          <button style={{ ...btn, background: "#1D9E75", color: "#fff", flex: 1 }} onClick={() => {
+                             const head = ["S.No", "Date", "Emp ID", "Employee", "Status", "Reason"];
+                             const rows = [];
+                             let sno = 1;
+                             const yNum = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
+                             const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0');
+                             const prefix = `${yNum}-${mIdxStr}`;
+                             const mLogs = dailyAtt.filter(r => r.date.startsWith(prefix)).sort((a,b) => a.date.localeCompare(b.date));
+                             mLogs.forEach(log => {
+                               const emp = emps.find(e => e.id === log.emp_id);
+                               if (emp && emp.id !== "admin") {
+                                 rows.push([sno++, fmtDate(log.date), emp.id, emp.name, log.status, log.reason || "-"]);
+                               }
+                             });
+                             if (!rows.length) return alert(`No daily records found for ${mo} ${yNum}`);
+                             exportExcel([head, ...rows], `Daily_Logs_${mo}_${yNum}`);
+                          }}>📊 Excel</button>
+                          <button style={{ ...btn, background: "#d32f2f", color: "#fff", flex: 1 }} onClick={() => {
+                             const head = ["S.No", "Date", "Emp ID", "Employee", "Status", "Reason"];
+                             const rows = [];
+                             let sno = 1;
+                             const yNum = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
+                             const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0');
+                             const prefix = `${yNum}-${mIdxStr}`;
+                             const mLogs = dailyAtt.filter(r => r.date.startsWith(prefix)).sort((a,b) => a.date.localeCompare(b.date));
+                             mLogs.forEach(log => {
+                               const emp = emps.find(e => e.id === log.emp_id);
+                               if (emp && emp.id !== "admin") {
+                                 rows.push([sno++, fmtDate(log.date), emp.id, emp.name, log.status, log.reason || "-"]);
+                               }
+                             });
+                             if (!rows.length) return alert(`No daily records found for ${mo} ${yNum}`);
+                             setSlip(buildReportPdf("Monthly Log of Daily Attendance", `Reporting Period: ${mo} ${yNum}`, head, rows));
+                          }}>📄 PDF</button>
+                       </div>
+                     </div>
+
+                   </div>
+                 </div>
+               )}
             </div>
           )}
 
@@ -1509,8 +1585,8 @@ export default function App() {
                       {MS.map((m) => <option key={m} value={m}>{mL(m, fy)}</option>)}
                     </select>
                   </div>
-                  <div style={{ display: "flex" }}>
-                    <button style={{ ...btn, background: "#1D9E75", color: "#fff", margin: 0, marginRight: 5 }} onClick={() => {
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button style={{ ...btn, background: "#1D9E75", color: "#fff", margin: 0 }} onClick={() => {
                       const head = ["S.No", "Emp ID", "Employee", "Month", "Work Days", "Present", "Holidays", "Leave", "Balance", "LOP", "Comments"];
                       const rows = [];
                       let sno = 1;
