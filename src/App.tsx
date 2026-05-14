@@ -309,6 +309,17 @@ const generatePayslipsHtml = (slipsData, fy) => {
   </html>`;
 };
 
+// Generic Diff Generator for Audit Logs
+const getDiffText = (oldObj, newObj, keys) => {
+  let diffs = [];
+  keys.forEach(k => {
+    if (String(oldObj[k] || "") !== String(newObj[k] || "")) {
+      diffs.push(`${k}: '${oldObj[k] || ""}' -> '${newObj[k] || ""}'`);
+    }
+  });
+  return diffs.join(" | ");
+};
+
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [sysWarn, setSysWarn] = useState(null);
@@ -317,6 +328,7 @@ export default function App() {
   const [pay, setPay] = useState({});
   const [att, setAtt] = useState({});
   const [dailyAtt, setDailyAtt] = useState([]); 
+  const [auditLogs, setAuditLogs] = useState([]); // NEW: Audit Log State
 
   // Core State
   const [ses, setSes] = useState(null);
@@ -339,6 +351,7 @@ export default function App() {
       let loadedLedData = [];
       let loadedAttData = [];
       let loadedDailyData = [];
+      let loadedAuditData = [];
 
       try {
         const { data, error } = await supabase.from("gits_employees").select("*");
@@ -362,6 +375,12 @@ export default function App() {
         const { data, error } = await supabase.from("gits_daily_attendance").select("*");
         if (error && error.code !== "42P01") throw error;
         loadedDailyData = data || [];
+      } catch (e) { }
+      
+      try {
+        const { data, error } = await supabase.from("gits_audit_log").select("*").order("created_at", { ascending: false });
+        if (error && error.code !== "42P01") throw error;
+        loadedAuditData = data || [];
       } catch (e) { }
 
       if (loadedEmps.length === 0) {
@@ -434,6 +453,7 @@ export default function App() {
       setPay(formattedPay);
       setAtt(formattedAtt);
       setDailyAtt(loadedDailyData);
+      setAuditLogs(loadedAuditData);
       if (errs.length > 0) setSysWarn(errs.join(" | "));
       setDbLoaded(true);
     };
@@ -495,6 +515,14 @@ export default function App() {
     });
     setDailyForm(form);
   }, [markDate, dailyAtt, emps]);
+
+  // NEW: Universal Logging Hook
+  const logAction = async (module, desc) => {
+    if (!ses || ses.role !== "a") return;
+    const newLog = { admin_id: ses.id, module, description: desc, created_at: new Date().toISOString() };
+    setAuditLogs(prev => [newLog, ...prev]);
+    try { await supabase.from("gits_audit_log").insert(newLog); } catch (e) { console.error("Audit log failed to save remotely", e); }
+  };
 
   const login = () => {
     const id = idR.current.trim(), pw = pwR.current.trim();
@@ -590,11 +618,13 @@ export default function App() {
     setEmps([...emps, newEmp]);
     setPay({ ...pay, [nE.id]: {} });
     setAtt({ ...att, [nE.id]: {} });
+    logAction("Employees", `Added new employee ${nE.name} (${nE.id})`);
     setShowAddEmp(false);
     setNE({ id: "", name: "", desig: "", pan: "", cat: "Onshore", basic: "", phone: "", email: "", pwd: "", start: "", end: "", status: "Active", bank: "", comments: "", driveLink: "", leavePolicy: "Yes" });
   };
 
   const saveEditEmployee = async () => {
+    const oldEmp = emps.find(e => e.id === editEmp);
     const combinedComments = editData.reason ? editData.reason : editData.comments;
     const payload = {
       phone: editData.phone, email: editData.email, start_date: editData.start, end_date: editData.end,
@@ -609,6 +639,12 @@ export default function App() {
         x.id === editEmp ? { ...x, phone: editData.phone, email: editData.email, start: editData.start, end: editData.end, status: editData.status, comments: combinedComments, bank: editData.bank, driveLink: editData.driveLink, leavePolicy: editData.leavePolicy, pan: editData.pan, ...(editData.adminForcePwd ? { pwd: editData.adminForcePwd } : {}) } : x
       )
     );
+    
+    // Trigger Audit Log Diff
+    const diffKeys = ['basic', 'desig', 'status', 'leavePolicy', 'pan'];
+    const diffTxt = getDiffText(oldEmp, editData, diffKeys);
+    if(diffTxt) logAction("Employees", `Updated ${oldEmp.name} (${oldEmp.id}): ${diffTxt}`);
+    
     setEditEmp(null);
   };
 
@@ -616,6 +652,7 @@ export default function App() {
     if (confirm("Are you sure you want to delete this employee?")) {
       await supabase.from("gits_employees").delete().eq("id", id);
       setEmps((p) => p.filter((x) => x.id !== id));
+      logAction("Employees", `Deleted employee ID: ${id}`);
     }
   };
 
@@ -623,13 +660,20 @@ export default function App() {
     if (!pEmp) return alert("Select Employee First");
     const e = { ...nEn, basic: +nEn.basic || 0, hra: +nEn.hra || 0, conv: +nEn.conv || 0, med: +nEn.med || 0, inc: +nEn.inc || 0, oth: +nEn.oth || 0, lop: +nEn.lop || 0, adv: +nEn.adv || 0, pt: +nEn.pt || 0, tds: +nEn.tds || 0, othD: +nEn.othD || 0 };
     if (editLedger) {
+      const oldEntry = pay[pEmp][fy][editLedger.idx];
       await supabase.from("gits_ledger").update({ mo: e.m, t: e.t, basic: e.basic, hra: e.hra, conv: e.conv, med: e.med, inc: e.inc, oth: e.oth, lop: e.lop, adv: e.adv, pt: e.pt, tds: e.tds, othd: e.othD, note: e.note }).eq("id", editLedger.db_id);
       const updatedArr = [...(pay[pEmp]?.[fy] || [])];
       updatedArr[editLedger.idx] = { ...e, db_id: editLedger.db_id };
       setPay({ ...pay, [pEmp]: { ...pay[pEmp], [fy]: updatedArr } });
+      
+      const diffKeys = ['basic', 'hra', 'conv', 'med', 'inc', 'oth', 'lop', 'adv', 'pt', 'tds', 'othD'];
+      const diffTxt = getDiffText(oldEntry, e, diffKeys);
+      if(diffTxt) logAction("Ledger", `Edited payroll for ${pEmp} in ${e.m}: ${diffTxt}`);
+      
     } else {
       const { data } = await supabase.from("gits_ledger").insert({ emp_id: pEmp, fy: fy, mo: e.m, t: e.t, basic: e.basic, hra: e.hra, conv: e.conv, med: e.med, inc: e.inc, oth: e.oth, lop: e.lop, adv: e.adv, pt: e.pt, tds: e.tds, othd: e.othD, note: e.note }).select();
       if (data) setPay({ ...pay, [pEmp]: { ...pay[pEmp], [fy]: [...(pay[pEmp]?.[fy] || []), { ...e, db_id: data[0].id }] } });
+      logAction("Ledger", `Added manual payroll entry for ${pEmp} in ${e.m} (Net: ${np(e)})`);
     }
     setShowAddEntry(false);
     setEditLedger(null);
@@ -639,10 +683,10 @@ export default function App() {
     if (confirm("Delete this payroll entry?")) {
       if (db_id) await supabase.from("gits_ledger").delete().eq("id", db_id);
       setPay({ ...pay, [eid]: { ...pay[eid], [fy]: pay[eid][fy].filter((_, i) => i !== idx) } });
+      logAction("Ledger", `Deleted payroll entry for ${eid}`);
     }
   };
 
-  // --- NEW: PERFECT COPY OR MASTER GROSS MATH LOGIC ---
   const getLastPay = (eid) => {
     const ks = Object.keys(pay[eid] || {}).sort();
     for (let i = ks.length - 1; i >= 0; i--) {
@@ -749,6 +793,7 @@ export default function App() {
     }
     setPay(nextPay);
     setShowBulk(false);
+    logAction("Ledger", `Processed Bulk Monthly Payroll for ${mo} FY ${fyL(fy)}`);
     alert(`Bulk Payroll processed for ${mL(mo, fy)}`);
   };
 
@@ -757,6 +802,8 @@ export default function App() {
     const entry = { m: mo, t: "s", basic: +offCycleData.basic || 0, hra: +offCycleData.hra || 0, conv: +offCycleData.conv || 0, med: +offCycleData.med || 0, inc: +offCycleData.inc || 0, oth: +offCycleData.oth || 0, lop: +offCycleData.lop || 0, adv: +offCycleData.adv || 0, pt: +offCycleData.pt || 0, tds: +offCycleData.tds || 0, othD: +offCycleData.othD || 0, note: offCycleData.note || "Off-Cycle" };
     const { data } = await supabase.from("gits_ledger").insert({ emp_id: offCycleData.empId, fy: fy, mo: mo, t: "s", basic: entry.basic, hra: entry.hra, conv: entry.conv, med: entry.med, inc: entry.inc, oth: entry.oth, lop: entry.lop, adv: entry.adv, pt: entry.pt, tds: entry.tds, othd: entry.othD, note: entry.note }).select();
     if (data) setPay((prev) => ({ ...prev, [offCycleData.empId]: { ...prev[offCycleData.empId], [fy]: [...(prev[offCycleData.empId]?.[fy] || []), { ...entry, db_id: data[0].id }] } }));
+    
+    logAction("Ledger", `Processed Off-Cycle Payroll for ${offCycleData.empId} in ${mo} FY ${fyL(fy)} (Net: ${np(entry)})`);
     setShowOffCycle(false);
     setOffCycleData({ empId: "", basic: 0, hra: 0, conv: 0, med: 0, inc: 0, oth: 0, lop: 0, adv: 0, pt: 0, tds: 0, othD: 0, note: "" });
     alert(`Off-Cycle Payroll saved for ${emps.find((e) => e.id === offCycleData.empId)?.name}`);
@@ -816,6 +863,7 @@ export default function App() {
         if (error) throw error;
       }
       setDailyAtt(prev => [...prev.filter(r => r.date !== markDate), ...inserts]);
+      logAction("Attendance", `Saved Daily Calendar records for date: ${markDate}`);
       alert(`Daily Attendance saved for ${markDate}`);
     } catch (err) {
       alert("Error saving daily attendance: " + err.message);
@@ -826,7 +874,7 @@ export default function App() {
     if (!confirm(`Auto-calculate from Daily Records for ${mo}? This will overwrite manual Leave/Holiday counts.`)) return;
 
     const yNum = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
-    const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0'); // EXACT CALENDAR MONTH NUMBER
+    const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0'); 
     const targetPrefix = `${yNum}-${mIdxStr}`; 
 
     const newAtt = { ...att };
@@ -974,6 +1022,7 @@ export default function App() {
         const { error: insErr } = await supabase.from("gits_attendance").insert(inserts);
         if (insErr) throw insErr;
       }
+      logAction("Attendance", `Saved bulk Monthly Report grid for ${mo} FY ${fyL(fy)}`);
       alert(`Attendance for ${mo} ${fyL(fy)} saved successfully to the Live Database!`);
     } catch (err) {
       console.error("Save error:", err);
@@ -1025,7 +1074,7 @@ export default function App() {
     </div>
   );
 
-  const TABS = ses?.role === "a" ? ["dashboard", "employees", "attendance", "ledger", "payslips", "profile"] : ["dashboard", "attendance", "ledger", "payslips", "profile"];
+  const TABS = ses?.role === "a" ? ["dashboard", "employees", "attendance", "ledger", "payslips", "audit", "profile"] : ["dashboard", "attendance", "ledger", "payslips", "profile"];
   const ADMIN_DRIVE = "https://drive.google.com/drive/folders/1kq4pVPRpaycQczhgycGz0dGHLUn2LmG6?usp=sharing";
   const DRIVE_LINK = ses.role === "a" ? ADMIN_DRIVE : myE?.driveLink;
 
@@ -1055,6 +1104,48 @@ export default function App() {
           <button key={t} style={{ padding: "10px 15px", background: "none", border: "none", borderBottom: tab === t ? "3px solid #1a1a2e" : "none", cursor: "pointer", fontWeight: tab === t ? "bold" : "normal" }} onClick={() => { setTab(t); if (t === "profile" && myE) { setSecQ(myE.sec_q || ""); setSecA(myE.sec_a || ""); } }}>{t.toUpperCase()}</button>
         ))}
       </div>
+
+      {/* --- AUDIT LOG TAB --- */}
+      {tab === "audit" && ses.role === "a" && (
+        <div style={{ ...card, padding: 0 }}>
+          <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee" }}>
+            <h3 style={{ margin: 0 }}>System Audit Logs</h3>
+            <button style={{ ...btn, background: "#1D9E75", color: "#fff", border: "none" }} onClick={() => {
+              const head = ["Log ID", "Date & Time", "Admin ID", "Module", "Action / Changes"];
+              const rows = auditLogs.map(l => [l.id, new Date(l.created_at).toLocaleString('en-IN'), l.admin_id, l.module, l.description]);
+              exportExcel([head, ...rows], `Audit_Logs_${new Date().toISOString().split('T')[0]}`);
+            }}>📊 Download Logs (Excel)</button>
+          </div>
+          <div style={{ overflowX: "auto", maxHeight: 600 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                <tr style={{ background: "#f4f4f4", textAlign: "left", whiteSpace: "nowrap" }}>
+                  <th style={thS}>Log ID</th><th style={thS}>Timestamp (IST)</th><th style={thS}>Admin ID</th><th style={thS}>Module</th><th style={thS}>Description of Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.length === 0 ? (
+                  <tr><td colSpan="5" style={{ padding: 20, textAlign: "center", color: "#888" }}>No audit records found.</td></tr>
+                ) : (
+                  auditLogs.map((log) => (
+                    <tr key={log.id || log.created_at} style={{ borderBottom: "1px solid #eee", background: log.module === "Ledger" ? "#fbfdff" : log.module === "Employees" ? "#fefdfa" : "#fff" }}>
+                      <td style={{ ...tdS, color: "#999" }}>{log.id || "-"}</td>
+                      <td style={{ ...tdS, fontWeight: "bold" }}>{new Date(log.created_at).toLocaleString('en-IN')}</td>
+                      <td style={tdS}>{log.admin_id}</td>
+                      <td style={tdS}>
+                        <span style={{ padding: "3px 8px", borderRadius: 12, fontSize: 10, fontWeight: "bold", background: log.module === "Ledger" ? "#e3f2fd" : log.module === "Employees" ? "#fff3e0" : "#f3e5f5", color: log.module === "Ledger" ? "#1565c0" : log.module === "Employees" ? "#ef6c00" : "#7b1fa2" }}>
+                          {log.module}
+                        </span>
+                      </td>
+                      <td style={{ ...tdS, whiteSpace: "normal" }}>{log.description}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* --- PROFILE TAB --- */}
       {tab === "profile" && (
@@ -1102,14 +1193,14 @@ export default function App() {
                   const rows = [];
                   let sno = 1;
                   emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, e.desig, r.basic, r.hra, r.conv, r.med, r.inc, r.oth, gr(r), r.lop, r.adv, r.pt, r.tds, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""])));
-                  exportExcel([head, ...rows], `Payroll_${mo}_${fyL(fy)}`);
+                  exportExcel([head, ...rows], `Payroll_${mL(mo, fy)}`);
                 }}>📊 Excel</button>
                 <button style={{ ...btn, background: "#d32f2f", color: "#fff" }} onClick={() => {
                   const head = ["S.No", "Emp ID", "Employee", "Gross", "LOP", "Adv", "PT", "TDS", "Oth Ded", "Tot Ded", "Net", "Note"];
                   const rows = [];
                   let sno = 1;
                   emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, f$(gr(r)), f$(r.lop), f$(r.adv), f$(r.pt), f$(r.tds), f$(r.othD || 0), f$(dd(r)), f$(np(r)), r.note || "-"])));
-                  setSlip(buildReportPdf("Monthly Payroll Report", `Payroll generated for ${mo} ${fyL(fy)}`, head, rows));
+                  setSlip(buildReportPdf("Monthly Payroll Report", `Payroll generated for ${mL(mo, fy)}`, head, rows));
                 }}>📄 PDF</button>
               </div>
             )}
@@ -1670,6 +1761,7 @@ export default function App() {
                                     alert("Database Error: " + error.message);
                                 } else {
                                     updAtt(item.e.id, item.m, "CLEAR_ALL");
+                                    logAction("Attendance", `Deleted ledger record for ${item.e.id} in ${item.m}`);
                                 }
                               }
                             }}>Del</button>
@@ -1728,7 +1820,6 @@ export default function App() {
                     const l = getLastPay(id); 
                     const a = att[id]?.[fy]?.[nEn.m];
                     
-                    // Auto-calc for manual entry
                     const calDays = getCalendarDays(nEn.m, fy);
                     const corePay = (l.basic || 0) + (l.hra || 0) + (l.conv || 0) + (l.med || 0);
                     const lopDays = Number(a?.lop || 0);
@@ -1756,7 +1847,6 @@ export default function App() {
                 {[["Basic", "basic"], ["HRA", "hra"], ["Conv", "conv"], ["Med", "med"], ["Incentive", "inc"], ["Other Earn", "oth"], ["LOP (₹)", "lop"], ["Advance", "adv"], ["PT", "pt"], ["TDS", "tds"], ["Other Ded", "othD"]].map(([l, k]) => (<div key={k}><label style={lbl}>{l}</label><input style={sInp} type="number" value={nEn[k]} onChange={(e) => {
                     const v = e.target.value;
                     const nextEn = { ...nEn, [k]: v };
-                    // Auto-recalculate LOP if CORE salary component is manually edited
                     if (["basic", "hra", "conv", "med"].includes(k) && pEmp) {
                         const calDays = getCalendarDays(nextEn.m, fy);
                         const corePay = (+nextEn.basic || 0) + (+nextEn.hra || 0) + (+nextEn.conv || 0) + (+nextEn.med || 0);
