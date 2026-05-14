@@ -642,35 +642,61 @@ export default function App() {
     }
   };
 
+  // --- NEW: PERFECT COPY OR MASTER GROSS MATH LOGIC ---
   const getLastPay = (eid) => {
-    let ls = null;
     const ks = Object.keys(pay[eid] || {}).sort();
     for (let i = ks.length - 1; i >= 0; i--) {
-      const arr = pay[eid][ks[i]].filter((r) => r.t === "s");
+      // Find the last real salary run (not a 0-value off-cycle)
+      const arr = pay[eid][ks[i]].filter((r) => r.t === "s" && (r.basic > 0 || r.hra > 0));
       if (arr.length) {
-        ls = arr[arr.length - 1];
-        break;
+        return arr[arr.length - 1]; // Return the EXACT previous record
       }
     }
-    if (ls) return { basic: ls.basic || 0, hra: ls.hra || 0, conv: ls.conv || 0, med: ls.med || 0, inc: 0, oth: 0, lop: 0, adv: 0, pt: ls.pt || 0, tds: ls.tds || 0, othD: 0, note: "" };
+    return null; // Return null if no past record exists
+  };
+
+  const getEmpDefaults = (eid) => {
     const e = emps.find((x) => x.id === eid);
-    const gross = e?.basic || 0;
-    if (gross > 0) {
-      const defaultBasic = Math.round(gross * 0.6839);
-      const defaultHra = gross - defaultBasic - 800 - 1500;
-      return { basic: defaultBasic, hra: defaultHra > 0 ? defaultHra : 0, conv: 800, med: 1500, inc: 0, oth: 0, lop: 0, adv: 0, pt: 200, tds: 0, othD: 0, note: "" };
+    const l = getLastPay(eid);
+
+    // 1. If they have a previous salary record, COPY IT EXACTLY
+    if (l) {
+        return {
+            basic: l.basic || 0,
+            hra: l.hra || 0,
+            conv: l.conv || 0,
+            med: l.med || 0,
+            inc: 0, oth: 0, lop: 0, adv: 0,
+            pt: l.pt || 0, tds: l.tds || 0, othD: 0, note: ""
+        };
     }
-    return { basic: 0, hra: 0, conv: 800, med: 1500, inc: 0, oth: 0, lop: 0, adv: 0, pt: 200, tds: 0, othD: 0, note: "" };
+
+    // 2. If NO previous record (new emp), calculate standard math from Master Gross
+    const gross = Number(e?.basic || 0);
+    let basic = 0, hra = 0, conv = 800, med = 1500;
+    if (gross > 0) {
+      basic = Math.round(gross * 0.6839);
+      hra = gross - basic - conv - med;
+      if (hra < 0) hra = 0;
+    } else {
+      conv = 0; med = 0;
+    }
+
+    return {
+      basic, hra, conv, med,
+      inc: 0, oth: 0, lop: 0, adv: 0,
+      pt: 200, tds: 0, othD: 0, note: ""
+    };
   };
 
   const openBulkPayroll = () => {
     const defaults = {};
     emps.filter((e) => isActiveInMonth(e, mo, fy) && e.id !== "admin").forEach((emp) => {
-      const l = getLastPay(emp.id);
+      const d = getEmpDefaults(emp.id);
       const a = att[emp.id]?.[fy]?.[mo];
       
       const calDays = getCalendarDays(mo, fy);
-      const corePay = (l.basic || 0) + (l.hra || 0) + (l.conv || 0) + (l.med || 0);
+      const corePay = d.basic + d.hra + d.conv + d.med;
 
       const lopDays = Number(a?.lop || 0);
       let lopAmt = 0;
@@ -693,7 +719,7 @@ export default function App() {
           autoNote = autoNote ? `${autoNote} | ${lopDays} days LOP` : `${lopDays} days LOP`;
       }
 
-      defaults[emp.id] = { ...l, lop: lopAmt, oth: (l.oth || 0) + encashAmt, note: autoNote };
+      defaults[emp.id] = { ...d, lop: lopAmt, oth: encashAmt, note: autoNote };
     });
     setBulkData(defaults);
     setShowBulk(true);
@@ -800,7 +826,7 @@ export default function App() {
     if (!confirm(`Auto-calculate from Daily Records for ${mo}? This will overwrite manual Leave/Holiday counts.`)) return;
 
     const yNum = ["Jan", "Feb", "Mar"].includes(mo) ? parseInt(fy) + 1 : parseInt(fy);
-    const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0');
+    const mIdxStr = String(CAL_MS.indexOf(mo) + 1).padStart(2, '0'); // EXACT CALENDAR MONTH NUMBER
     const targetPrefix = `${yNum}-${mIdxStr}`; 
 
     const newAtt = { ...att };
@@ -1076,14 +1102,14 @@ export default function App() {
                   const rows = [];
                   let sno = 1;
                   emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, e.desig, r.basic, r.hra, r.conv, r.med, r.inc, r.oth, gr(r), r.lop, r.adv, r.pt, r.tds, r.othD || 0, dd(r), txInc(r), np(r), r.note || ""])));
-                  exportExcel([head, ...rows], `Payroll_${mL(mo, fy)}`);
+                  exportExcel([head, ...rows], `Payroll_${mo}_${fyL(fy)}`);
                 }}>📊 Excel</button>
                 <button style={{ ...btn, background: "#d32f2f", color: "#fff" }} onClick={() => {
                   const head = ["S.No", "Emp ID", "Employee", "Gross", "LOP", "Adv", "PT", "TDS", "Oth Ded", "Tot Ded", "Net", "Note"];
                   const rows = [];
                   let sno = 1;
                   emps.filter((e) => isActiveInMonth(e, mo, fy)).forEach((e) => (pay[e.id]?.[fy] || []).filter((r) => r.m === mo).forEach((r) => rows.push([sno++, e.id, e.name, f$(gr(r)), f$(r.lop), f$(r.adv), f$(r.pt), f$(r.tds), f$(r.othD || 0), f$(dd(r)), f$(np(r)), r.note || "-"])));
-                  setSlip(buildReportPdf("Monthly Payroll Report", `Payroll generated for ${mL(mo, fy)}`, head, rows));
+                  setSlip(buildReportPdf("Monthly Payroll Report", `Payroll generated for ${mo} ${fyL(fy)}`, head, rows));
                 }}>📄 PDF</button>
               </div>
             )}
@@ -1422,7 +1448,7 @@ export default function App() {
                                  rows.push([sno++, fmtDate(log.date), emp.id, emp.name, log.status, log.reason || "-"]);
                                }
                              });
-                             if (!rows.length) return alert(`No daily records found for ${mo} ${yNum}`);
+                             if (!rows.length) return alert(`No daily records found for ${mo} ${yNum}. Ensure you have saved daily attendance for this month.`);
                              exportExcel([head, ...rows], `Daily_Logs_${mo}_${yNum}`);
                           }}>📊 Excel</button>
                           <button style={{ ...btn, background: "#d32f2f", color: "#fff", flex: 1 }} onClick={() => {
@@ -1439,7 +1465,7 @@ export default function App() {
                                  rows.push([sno++, fmtDate(log.date), emp.id, emp.name, log.status, log.reason || "-"]);
                                }
                              });
-                             if (!rows.length) return alert(`No daily records found for ${mo} ${yNum}`);
+                             if (!rows.length) return alert(`No daily records found for ${mo} ${yNum}. Ensure you have saved daily attendance for this month.`);
                              setSlip(buildReportPdf("Monthly Log of Daily Attendance", `Reporting Period: ${mo} ${yNum}`, head, rows));
                           }}>📄 PDF</button>
                        </div>
