@@ -11,7 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==========================================
 
 const CO = "GATEWAY IT SOLUTIONS";
-const AD = "Office# 401, 4th Floor, Manjeera Majestic Commercial,  JNTU Rd, Beside Manjeera Mall, K P H B Phase 1, Hyderabad, Telangana-500072";
+const AD = "Office# 401, 4th Floor, Manjeera Majestic Commercial,  JNTU Rd, Beside Lulu Mall, K P H B Phase 1, Hyderabad, Telangana-500072";
 const MS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 const CAL_MS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const SEC_QS = [
